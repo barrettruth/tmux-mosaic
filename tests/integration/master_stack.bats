@@ -24,15 +24,15 @@ teardown() {
 @test "plugin load: hooks are registered" {
     run mosaic_t show-hooks -g after-split-window
     [ "$status" -eq 0 ]
-    [[ "$output" == *"_relayout"* ]]
+    [[ "$output" == *"relayout"* ]]
 
     run mosaic_t show-hooks -g after-kill-pane
-    [[ "$output" == *"_relayout"* ]]
+    [[ "$output" == *"relayout"* ]]
 }
 
 @test "single pane: relayout is no-op" {
     [ "$(mosaic_pane_count)" = "1" ]
-    mosaic_op _relayout
+    mosaic_op relayout
     [ "$(mosaic_pane_count)" = "1" ]
 }
 
@@ -127,14 +127,37 @@ teardown() {
     [ "$(mosaic_pane_index)" = "1" ]
 }
 
-@test "resize-master adjusts mfact and clamps" {
+@test "resize-master adjusts mfact (window-scoped) and clamps" {
+    mosaic_split
     [ "$(mosaic_t show-option -gqv @mosaic-mfact)" = "50" ]
+    [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" ]
+
     mosaic_op resize-master +10
-    [ "$(mosaic_t show-option -gqv @mosaic-mfact)" = "60" ]
+    [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+    [ "$(mosaic_t show-option -gqv @mosaic-mfact)" = "50" ]
+
     mosaic_op resize-master -100
-    [ "$(mosaic_t show-option -gqv @mosaic-mfact)" = "5" ]
+    [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "5" ]
+
     mosaic_op resize-master +200
-    [ "$(mosaic_t show-option -gqv @mosaic-mfact)" = "95" ]
+    [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "95" ]
+}
+
+@test "resize-master on two windows is independent" {
+    mosaic_split
+    mosaic_t new-window -t t: "sleep 3600"
+    mosaic_t set-option -wq -t t:2 @mosaic-enabled 1
+    mosaic_t split-window -t t:2 "sleep 3600"
+    sleep 0.15
+
+    mosaic_t select-window -t t:1
+    mosaic_op resize-master +20
+
+    mosaic_t select-window -t t:2
+    mosaic_op resize-master -10
+
+    [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "70" ]
+    [ "$(mosaic_t show-option -wqv -t t:2 @mosaic-mfact)" = "40" ]
 }
 
 @test "kill stack pane: hook auto-rebalances stack" {

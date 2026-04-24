@@ -37,7 +37,8 @@ mosaic_log() {
     local debug
     debug=$(mosaic_get "@mosaic-debug" "0")
     [[ "$debug" != "1" ]] && return 0
-    local logfile
-    logfile=$(mosaic_get "@mosaic-log-file" "/tmp/tmux-mosaic.log")
+    local logfile default_log
+    default_log="${TMPDIR:-/tmp}/tmux-mosaic-$(id -u).log"
+    logfile=$(mosaic_get "@mosaic-log-file" "$default_log")
     printf '%s [%d] %s\n' "$(date +%H:%M:%S.%N)" "$$" "$*" >>"$logfile"
 }
