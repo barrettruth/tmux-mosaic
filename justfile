@@ -6,7 +6,7 @@ format:
     shfmt -d mosaic.tmux scripts tests
 
 lint:
-    shellcheck mosaic.tmux scripts/*.sh scripts/algorithms/*.sh tests/helpers.bash
+    shellcheck -x --source-path=SCRIPTDIR --source-path=SCRIPTDIR/scripts mosaic.tmux scripts/*.sh scripts/algorithms/*.sh tests/helpers.bash
 
 test:
     bats tests/integration
