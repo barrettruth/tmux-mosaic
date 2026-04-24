@@ -1,0 +1,13 @@
+name: Remove Question Label on Issue Comment
+
+on: [issue_comment]
+
+jobs:
+  remove_question:
+    runs-on: ubuntu-latest
+    if: github.event.sender.login != 'barrettruth'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          labels: question

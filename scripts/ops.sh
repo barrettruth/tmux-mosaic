@@ -18,6 +18,10 @@ algorithm_for_window() {
 
 load_algorithm() {
     local algo="$1"
+    if [[ ! "$algo" =~ ^[a-z][a-z0-9-]*$ ]]; then
+        echo "mosaic: invalid algorithm name: $algo" >&2
+        return 1
+    fi
     local file="$CURRENT_DIR/algorithms/$algo.sh"
     if [[ ! -f "$file" ]]; then
         echo "mosaic: unknown algorithm: $algo" >&2
@@ -33,7 +37,7 @@ shift || true
 
 WIN_ARG=""
 case "$cmd" in
-_relayout | relayout)
+relayout)
     WIN_ARG="${1:-}"
     ;;
 esac
@@ -46,7 +50,7 @@ if ! load_algorithm "$algo"; then
 fi
 
 case "$cmd" in
-_relayout | relayout) algo_relayout "$target_window" ;;
+relayout) algo_relayout "$target_window" ;;
 toggle) algo_toggle ;;
 focus-next) algo_focus_next ;;
 focus-prev) algo_focus_prev ;;

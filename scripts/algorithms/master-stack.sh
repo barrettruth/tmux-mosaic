@@ -2,7 +2,18 @@
 
 algo_pane_count() { tmux display-message -p '#{window_panes}'; }
 algo_pane_index() { tmux display-message -p '#{pane_index}'; }
-algo_pane_base() { tmux show-option -gv pane-base-index 2>/dev/null || echo 0; }
+algo_pane_base() { tmux display-message -p '#{e|+|:0,#{?pane-base-index,#{pane-base-index},0}}'; }
+
+algo_mfact_for() {
+    local win="$1"
+    local val
+    val=$(tmux show-option -wqv -t "$win" "@mosaic-mfact" 2>/dev/null)
+    [[ -n "$val" ]] && {
+        echo "$val"
+        return
+    }
+    mosaic_get "@mosaic-mfact" "50"
+}
 
 algo_swap_keep_focus() {
     local pid
@@ -25,7 +36,7 @@ algo_relayout() {
     [[ "$n" -le 1 ]] && return 0
 
     local mfact
-    mfact=$(mosaic_get "@mosaic-mfact" "50")
+    mfact=$(algo_mfact_for "$win")
 
     tmux set-window-option -t "$win" main-pane-width "${mfact}%" 2>/dev/null || true
     tmux select-layout -t "$win" main-vertical 2>/dev/null || true
@@ -81,13 +92,14 @@ algo_resize_master() {
     if [[ -z "$delta" ]]; then
         delta=$(mosaic_get "@mosaic-step" "5")
     fi
-    local cur new
-    cur=$(mosaic_get "@mosaic-mfact" "50")
+    local win cur new
+    win=$(tmux display-message -p '#{window_id}')
+    cur=$(algo_mfact_for "$win")
     new=$((cur + delta))
     [[ "$new" -lt 5 ]] && new=5
     [[ "$new" -gt 95 ]] && new=95
-    tmux set-option -gq "@mosaic-mfact" "$new"
-    algo_relayout
+    tmux set-option -wq -t "$win" "@mosaic-mfact" "$new"
+    algo_relayout "$win"
 }
 
 algo_toggle_zoom() { tmux resize-pane -Z; }

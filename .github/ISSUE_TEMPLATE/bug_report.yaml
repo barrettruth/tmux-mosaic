@@ -1,0 +1,71 @@
+name: Bug Report
+description: Report a bug
+title: 'bug: '
+labels: [bug]
+body:
+  - type: checkboxes
+    attributes:
+      label: Prerequisites
+      options:
+        - label:
+            I have searched [existing
+            issues](https://github.com/barrettruth/tmux-mosaic/issues)
+          required: true
+        - label: I have updated to the latest version
+          required: true
+
+  - type: textarea
+    attributes:
+      label: 'tmux version'
+      description: 'Output of `tmux -V`'
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: 'Operating system'
+      placeholder: 'e.g. Arch Linux, macOS 15, Ubuntu 24.04'
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Description
+      description: What happened? What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to trigger the bug
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Minimal tmux config
+      description: |
+        A minimal `tmux.conf` that loads only mosaic and reproduces the bug.
+        Run with `tmux -L mosaic-bug -f /path/to/repro.conf`.
+      render: tmux
+      value: |
+        set -g base-index 1
+        set -g pane-base-index 1
+        run-shell ~/path/to/tmux-mosaic/mosaic.tmux
+        set-option -wg @mosaic-enabled 1
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 'Window layout snapshot'
+      description: |
+        Output of `tmux display-message -p '#{window_layout}'` while the bug
+        is on screen. Helps verify pane geometry.
+      render: text
