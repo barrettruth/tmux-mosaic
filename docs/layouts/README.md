@@ -6,12 +6,15 @@ they support.
 
 ## Global options
 
-| Option                | Default | Effect                                              |
-| --------------------- | ------- | --------------------------------------------------- |
-| `@mosaic-algorithm`   | unset   | Global default layout for windows without a local override |
-| `@mosaic-orientation` | `left`  | For `master-stack`: `left`, `right`, `top`, or `bottom` |
-| `@mosaic-mfact`       | `50`    | For `master-stack`: master size as a percent        |
-| `@mosaic-step`        | `5`     | Default `resize-master` step                        |
+| Option              | Default | Effect                                              |
+| ------------------- | ------- | --------------------------------------------------- |
+| `@mosaic-algorithm` | unset   | Global default layout for windows without a local override |
+| `@mosaic-step`      | `5`     | Default `resize-master` step                        |
+
+`master-stack` also uses `@mosaic-orientation` and `@mosaic-mfact`; see the
+[`master-stack`](master-stack.md) page for those.
+
+## Available layouts
 
 | Layout            | Backing tmux layout | `promote` | `resize-master` | Notes                                     | Page                                  |
 | ----------------- | ------------------- | --------- | --------------- | ----------------------------------------- | ------------------------------------- |
