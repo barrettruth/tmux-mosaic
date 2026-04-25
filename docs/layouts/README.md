@@ -1,22 +1,35 @@
 # Layouts
 
-Select a layout per window with:
+Set a global layout default for all windows with:
+
+```tmux
+set-option -gwq @mosaic-algorithm master-stack
+```
+
+Override just the current window with:
 
 ```tmux
 set-option -wq @mosaic-algorithm grid
 ```
 
-Unset it to turn mosaic off on that window:
+Disable mosaic on just the current window with:
+
+```tmux
+set-option -wq @mosaic-algorithm off
+```
+
+Unset the window-local value to fall back to the global setting again:
 
 ```tmux
 set-option -wqu @mosaic-algorithm
 ```
 
 All layouts support `toggle` and `relayout`. Unsupported operations surface a
-tmux message instead of failing hard. `toggle` turns the current window layout
-off. Mosaic only relayouts windows whose `@mosaic-algorithm` is set and that
-have more than one pane. Invalid algorithm names fail when an operation tries
-to load them.
+tmux message instead of failing hard. `toggle` disables the current window; if
+the window is locally `off` and a global layout is configured, `toggle`
+re-enables the global setting. Mosaic only relayouts windows whose effective
+`@mosaic-algorithm` resolves to a layout and that have more than one pane.
+Invalid algorithm names fail when an operation tries to load them.
 
 | Layout            | Backing tmux layout | `promote` | `resize-master` | Notes                                     | Page                                  |
 | ----------------- | ------------------- | --------- | --------------- | ----------------------------------------- | ------------------------------------- |

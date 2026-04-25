@@ -18,6 +18,13 @@ mosaic_get_w() {
   printf '%s\n' "${val:-$default}"
 }
 
+mosaic_get_gw() {
+  local opt="$1" default="$2"
+  local val
+  val=$(tmux show-option -gwqv "$opt" 2>/dev/null)
+  printf '%s\n' "${val:-$default}"
+}
+
 mosaic_get_w_raw() {
   local opt="$1" target="${2:-}"
   local val
@@ -29,9 +36,47 @@ mosaic_get_w_raw() {
   printf '%s\n' "$val"
 }
 
+mosaic_local_algorithm() {
+  local target="${1:-}"
+  mosaic_get_w_raw "@mosaic-algorithm" "$target"
+}
+
+mosaic_global_algorithm() {
+  mosaic_get_gw "@mosaic-algorithm" ""
+}
+
+mosaic_algorithm_for_window() {
+  local target="${1:-}" val
+  val=$(mosaic_local_algorithm "$target")
+  case "$val" in
+  off)
+    printf '\n'
+    return 0
+    ;;
+  '')
+    ;;
+  *)
+    printf '%s\n' "$val"
+    return 0
+    ;;
+  esac
+
+  val=$(mosaic_global_algorithm)
+  case "$val" in
+  '' | off) printf '\n' ;;
+  *) printf '%s\n' "$val" ;;
+  esac
+}
+
+mosaic_window_has_local_algorithm() {
+  local target="${1:-}" val
+  val=$(mosaic_local_algorithm "$target")
+  [[ -n "$val" && "$val" != "off" ]]
+}
+
 mosaic_window_has_algorithm() {
   local target="${1:-}"
-  [[ -n "$(mosaic_get_w_raw "@mosaic-algorithm" "$target")" ]]
+  [[ -n "$(mosaic_algorithm_for_window "$target")" ]]
 }
 
 mosaic_enabled() {
@@ -79,10 +124,28 @@ mosaic_can_relayout_window() {
 }
 
 mosaic_toggle_window() {
-  local _relayout_fn="${1:-}" win
+  local relayout_fn="${1:-}" win local_algo global_algo
   win=$(mosaic_current_window)
-  if mosaic_window_has_algorithm "$win"; then
-    tmux set-option -wqu -t "$win" "@mosaic-algorithm" 2>/dev/null
+  local_algo=$(mosaic_local_algorithm "$win")
+  global_algo=$(mosaic_global_algorithm)
+
+  if [[ "$local_algo" == "off" ]]; then
+    if [[ -n "$global_algo" && "$global_algo" != "off" ]]; then
+      tmux set-option -wqu -t "$win" "@mosaic-algorithm" 2>/dev/null
+      mosaic_show_message "mosaic: on"
+      [[ -n "$relayout_fn" ]] && "$relayout_fn" "$win"
+    else
+      mosaic_show_message "mosaic: no layout configured"
+    fi
+  elif [[ -n "$local_algo" ]]; then
+    if [[ -n "$global_algo" && "$global_algo" != "off" ]]; then
+      tmux set-option -wq -t "$win" "@mosaic-algorithm" "off"
+    else
+      tmux set-option -wqu -t "$win" "@mosaic-algorithm" 2>/dev/null
+    fi
+    mosaic_show_message "mosaic: off"
+  elif [[ -n "$global_algo" && "$global_algo" != "off" ]]; then
+    tmux set-option -wq -t "$win" "@mosaic-algorithm" "off"
     mosaic_show_message "mosaic: off"
   else
     mosaic_show_message "mosaic: no layout configured"

@@ -34,6 +34,21 @@ mosaic_use_algorithm() {
   mosaic_t set-option -wq -t "$target" "@mosaic-algorithm" "$algo"
 }
 
+mosaic_use_global_algorithm() {
+  local algo="${1:?algorithm required}"
+  mosaic_t set-option -gwq "@mosaic-algorithm" "$algo"
+}
+
+mosaic_disable_algorithm() {
+  local target="${1:-t:1}"
+  mosaic_t set-option -wq -t "$target" "@mosaic-algorithm" "off"
+}
+
+mosaic_clear_algorithm() {
+  local target="${1:-t:1}"
+  mosaic_t set-option -wqu -t "$target" "@mosaic-algorithm"
+}
+
 mosaic_split() {
   local target="${1:-t:1}"
   mosaic_t split-window -t "$target" "sleep 3600"

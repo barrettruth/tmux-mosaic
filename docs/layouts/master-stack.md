@@ -36,15 +36,16 @@
 ## Example use
 
 ```tmux
-set-option -wq @mosaic-algorithm master-stack
-set-option -wq @mosaic-orientation right
+set-option -gwq @mosaic-algorithm master-stack
+set-option -gwq @mosaic-orientation right
 
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r , run '#{E:@mosaic-exec} resize-master -5'
 bind -r . run '#{E:@mosaic-exec} resize-master +5'
 ```
 
-Unset `@mosaic-algorithm` to turn it off on that window.
+Set `@mosaic-algorithm` to `off` on a window to disable mosaic there. Unset the
+window-local value to fall back to the global setting again.
 
 Stock tmux still handles focus movement, swapping through the ring, and zoom:
 

@@ -59,7 +59,7 @@ assert_orientation_layout() {
   [ "$status" -eq 0 ]
   [ "$output" = "50" ]
 
-  run mosaic_t show-option -gqv @mosaic-default-algorithm
+  run mosaic_t show-option -gwqv @mosaic-algorithm
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 
@@ -208,26 +208,64 @@ assert_orientation_layout() {
 }
 
 @test "disabled window: splits do NOT retile" {
-  mosaic_t set-option -wqu -t t:1 "@mosaic-algorithm"
+  mosaic_clear_algorithm
   mosaic_split
   mosaic_split
   layout=$(mosaic_layout)
   [[ "$layout" != *"{"* ]] || [ "$(mosaic_pane_count)" -le 1 ]
 }
 
-@test "toggle: clears the current window layout" {
+@test "global algorithm: windows without a local override inherit it" {
+  mosaic_clear_algorithm
+  mosaic_use_global_algorithm master-stack
+  mosaic_split
+  mosaic_op relayout
+  layout=$(mosaic_layout)
+  [[ "$layout" == *"{"* ]]
+}
+
+@test "global algorithm: new windows inherit it" {
+  mosaic_t new-window -t t: "sleep 3600"
+  mosaic_use_global_algorithm master-stack
+  mosaic_split t:2
+  layout=$(mosaic_layout t:2)
+  [[ "$layout" == *"{"* ]]
+}
+
+@test "window-local algorithm overrides the global default" {
+  mosaic_clear_algorithm
+  mosaic_use_global_algorithm master-stack
+  mosaic_use_algorithm even-vertical
+  mosaic_split
+  mosaic_split
+  layout=$(mosaic_layout)
+  [[ "$layout" == *"["* ]]
+  [[ "$layout" != *"{"* ]]
+}
+
+@test "window-local off disables the global default" {
+  mosaic_clear_algorithm
+  mosaic_use_global_algorithm master-stack
+  mosaic_disable_algorithm
+  mosaic_split
+  mosaic_split
+  layout=$(mosaic_layout)
+  [[ "$layout" != *"{"* ]] || [ "$(mosaic_pane_count)" -le 1 ]
+}
+
+@test "toggle: clears the current window layout when no global default exists" {
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" = "master-stack" ]
   mosaic_op toggle
   [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
 }
 
 @test "toggle: window without a layout stays inert" {
-  mosaic_t set-option -wqu -t t:1 "@mosaic-algorithm"
+  mosaic_clear_algorithm
   mosaic_op toggle
   [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
 }
 
-@test "toggle: clearing the window layout disables relayout" {
+@test "toggle: clearing the window layout disables relayout when no global default exists" {
   mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "even-vertical"
   for _ in 1 2; do mosaic_split; done
 
@@ -244,6 +282,35 @@ assert_orientation_layout() {
   layout=$(mosaic_layout)
   [[ "$layout" == *"{"* ]]
   [[ "$layout" != *"["* ]]
+}
+
+@test "toggle: inherited global layout writes local off" {
+  mosaic_clear_algorithm
+  mosaic_use_global_algorithm master-stack
+  for _ in 1 2; do mosaic_split; done
+  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
+
+  mosaic_op toggle
+  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" = "off" ]
+
+  mosaic_t select-layout -t t:1 even-vertical
+  mosaic_op relayout
+
+  layout=$(mosaic_layout)
+  [[ "$layout" != *"{"* ]] || [ "$(mosaic_pane_count)" -le 1 ]
+}
+
+@test "toggle: local off can re-enable the global layout" {
+  mosaic_clear_algorithm
+  mosaic_use_global_algorithm master-stack
+  mosaic_disable_algorithm
+  for _ in 1 2; do mosaic_split; done
+
+  mosaic_op toggle
+  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
+
+  layout=$(mosaic_layout)
+  [[ "$layout" == *"{"* ]]
 }
 
 @test "unknown algorithm: dispatcher errors cleanly" {

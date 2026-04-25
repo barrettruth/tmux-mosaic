@@ -4,11 +4,6 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=helpers.sh
 source "$CURRENT_DIR/helpers.sh"
 
-algorithm_for_window() {
-  local win="$1"
-  mosaic_get_w_raw "@mosaic-algorithm" "$win"
-}
-
 load_algorithm() {
   local algo="$1"
   if [[ ! "$algo" =~ ^[a-z][a-z0-9-]*$ ]]; then
@@ -36,7 +31,12 @@ relayout | _sync-state)
 esac
 
 target_window=$(mosaic_resolve_window "$WIN_ARG")
-algo=$(algorithm_for_window "$target_window")
+local_algo=$(mosaic_local_algorithm "$target_window")
+algo=$(mosaic_algorithm_for_window "$target_window")
+
+if [[ "$cmd" == "toggle" && -z "$algo" && "$local_algo" == "off" ]]; then
+  algo=$(mosaic_global_algorithm)
+fi
 
 if [[ -z "$algo" ]]; then
   case "$cmd" in
