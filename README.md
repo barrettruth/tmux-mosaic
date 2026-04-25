@@ -1,35 +1,46 @@
 # tmux-mosaic
 
-**Master/stack pane tiling for tmux**
+**Opt-in pane tiling layouts for tmux**
 
-A focused tmux plugin for master/stack pane tiling and a small set of adjacent
-layouts. Mosaic is opt-in per window, uses native tmux layouts where possible,
-and installs no default keybindings.
+A small tmux plugin for per-window pane tiling. Mosaic uses native tmux layouts
+where possible and installs no default keybindings.
 
-Requires tmux 3.2+.
+## Dependencies
 
-```
-┌────────────┬────────────┐
-│            │   stack    │
-│            ├────────────┤
-│   master   │   stack    │
-│            ├────────────┤
-│            │   stack    │
-└────────────┴────────────┘
-```
+- tmux 3.2+
+- bash
+
+## [Installation](INSTALLATION.md)
+
+TPM, manual, and nix setup live in [INSTALLATION.md](INSTALLATION.md).
+
+## Algorithms
+
+- `master-stack` — default; one master pane plus equal-split stack
+- `even-vertical` — equal-height column
+- `even-horizontal` — equal-width row
+- `grid` — tmux `tiled`
+- `monocle` — keep the focused pane zoomed
+
+Full behavior, supported ops, and relevant options live in
+[docs/algorithms](docs/algorithms/README.md).
 
 ## Quick start
 
-1. Install mosaic with TPM, manually, or via nix. See
-   [INSTALLATION.md](INSTALLATION.md).
-2. Enable it on the current window:
+Enable mosaic on the current window:
 
 ```tmux
 set-option -wq @mosaic-enabled 1
 ```
 
-3. Add your own bindings if you want them. Mosaic exports `@mosaic-exec` so the
-   same bindings work across TPM, manual, and nix installs.
+Pick a non-default algorithm if you want one:
+
+```tmux
+set-option -wq @mosaic-algorithm grid
+```
+
+Add your own bindings if you want them. Mosaic exports `@mosaic-exec` so the
+same bindings work across TPM, manual, and nix installs.
 
 ```tmux
 bind Enter run '#{E:@mosaic-exec} promote'
@@ -40,13 +51,6 @@ bind T run '#{E:@mosaic-exec} toggle'
 
 Bindings shown here are examples only. Mosaic does not install any bindings by
 default.
-
-## Model
-
-- `master-stack` is the default algorithm.
-- `@mosaic-enabled` is window-scoped. Unset windows are untouched.
-- Stock tmux still handles focus movement, swapping, and zoom well.
-- Mosaic adds the few operations tmux does not already express cleanly.
 
 ## Operations
 
@@ -61,7 +65,10 @@ Not every algorithm implements every op. `master-stack` implements the full set;
 the other layouts support `toggle` and `relayout` only. See
 [Algorithms](docs/algorithms/README.md).
 
-For focus, swapping through the ring, and zoom, use stock tmux directly:
+`@mosaic-enabled` is window-scoped. Unset windows are untouched.
+
+For focus movement, swapping through the ring, and zoom, use stock tmux
+directly:
 
 | Want                                    | Tmux command                                              |
 | --------------------------------------- | --------------------------------------------------------- |
@@ -82,14 +89,6 @@ For focus, swapping through the ring, and zoom, use stock tmux directly:
 | `@mosaic-step`              | global        | `5`                                        | Default `resize-master` step                            |
 | `@mosaic-debug`             | global        | `0`                                        | Set to `1` to log to `@mosaic-log-file`                 |
 | `@mosaic-log-file`          | global        | `${TMPDIR:-/tmp}/tmux-mosaic-$(id -u).log` | Log path when debug is on                               |
-
-## Documentation
-
-- [Installation](INSTALLATION.md)
-- [Algorithms](docs/algorithms/README.md)
-
-See the algorithm pages for layout behavior, supported ops, and relevant
-options.
 
 ## Limits
 
