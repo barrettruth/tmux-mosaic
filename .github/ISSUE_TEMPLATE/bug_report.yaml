@@ -58,7 +58,6 @@ body:
         set -g base-index 1
         set -g pane-base-index 1
         run-shell ~/path/to/tmux-mosaic/mosaic.tmux
-        set-option -wg @mosaic-enabled 1
     validations:
       required: true
 

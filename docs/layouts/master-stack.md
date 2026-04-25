@@ -1,7 +1,7 @@
 # master-stack
 
-`master-stack` is the default layout. It keeps one primary pane and an
-equal-split stack using tmux's `main-*` layouts.
+`master-stack` keeps one primary pane and an equal-split stack using tmux's
+`main-*` layouts.
 
 ## Behavior
 
@@ -20,7 +20,7 @@ equal-split stack using tmux's `main-*` layouts.
 
 | Op                 | Behavior                                                          |
 | ------------------ | ----------------------------------------------------------------- |
-| `toggle`           | Enable or disable tiling on the current window                    |
+| `toggle`           | Turn `master-stack` off on the current window                     |
 | `relayout`         | Re-apply the current orientation and current `@mosaic-mfact`      |
 | `promote`          | Focused stack pane becomes master. On master: swap with stack-top |
 | `resize-master ±N` | Change `@mosaic-mfact` for the current window, clamped to 5–95    |
@@ -44,11 +44,7 @@ bind -r , run '#{E:@mosaic-exec} resize-master -5'
 bind -r . run '#{E:@mosaic-exec} resize-master +5'
 ```
 
-Or use the current default `master-stack` layout without a window override:
-
-```tmux
-set-option -wq @mosaic-enabled 1
-```
+Unset `@mosaic-algorithm` to turn it off on that window.
 
 Stock tmux still handles focus movement, swapping through the ring, and zoom:
 

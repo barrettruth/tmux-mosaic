@@ -51,27 +51,33 @@ Reload tmux if it is already running:
 tmux source-file ~/.tmux.conf
 ```
 
-Use the default `master-stack` layout on the current window:
+Select a layout on the current window:
 
 ```tmux
-set-option -wq @mosaic-enabled 1
+set-option -wq @mosaic-algorithm master-stack
 ```
 
-Or pick a specific layout on the current window:
+Switch layouts by setting a different value:
 
 ```tmux
 set-option -wq @mosaic-algorithm grid
 ```
 
-Setting `@mosaic-algorithm` on a window implies enabled.
+Unset it to turn mosaic off on that window:
+
+```tmux
+set-option -wqu @mosaic-algorithm
+```
 
 Optional example bindings:
 
 ```tmux
+bind M set-option -wq @mosaic-algorithm master-stack
+bind G set-option -wq @mosaic-algorithm grid
+bind T set-option -wqu @mosaic-algorithm
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r , run '#{E:@mosaic-exec} resize-master -5'
 bind -r . run '#{E:@mosaic-exec} resize-master +5'
-bind T run '#{E:@mosaic-exec} toggle'
 ```
 
 For focus movement, swapping, and zoom, keep using stock tmux commands. For

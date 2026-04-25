@@ -6,9 +6,7 @@ source "$CURRENT_DIR/helpers.sh"
 
 algorithm_for_window() {
   local win="$1"
-  local fallback
-  fallback=$(mosaic_get "@mosaic-default-algorithm" "master-stack")
-  mosaic_get_w "@mosaic-algorithm" "$fallback" "$win"
+  mosaic_get_w_raw "@mosaic-algorithm" "$win"
 }
 
 load_algorithm() {
@@ -39,6 +37,16 @@ esac
 
 target_window=$(mosaic_resolve_window "$WIN_ARG")
 algo=$(algorithm_for_window "$target_window")
+
+if [[ -z "$algo" ]]; then
+  case "$cmd" in
+  relayout | _sync-state) exit 0 ;;
+  toggle | promote | resize-master)
+    mosaic_show_message "mosaic: no layout configured"
+    exit 0
+    ;;
+  esac
+fi
 
 if ! load_algorithm "$algo"; then
   exit 1

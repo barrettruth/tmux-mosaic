@@ -4,7 +4,7 @@
 
 ## Behavior
 
-- when enabled on a window with more than one pane, the focused pane stays
+- when selected on a window with more than one pane, the focused pane stays
   zoomed
 - splitting the zoomed pane keeps the new pane zoomed
 - selecting another pane re-zooms the new active pane because mosaic relayouts
@@ -16,16 +16,16 @@
 
 | Op                 | Support | Behavior                                         |
 | ------------------ | ------- | ------------------------------------------------ |
-| `toggle`           | yes     | Enable or disable monocle on the current window  |
-| `relayout`         | yes     | Re-zoom the active pane if the window is enabled |
+| `toggle`           | yes     | Turn the current window layout off               |
+| `relayout`         | yes     | Re-zoom the active pane on the current window    |
 | `promote`          | no      | Surfaces a tmux message                          |
 | `resize-master ±N` | no      | Surfaces a tmux message                          |
 
 ## Relevant options
 
-No layout-specific options. Set `@mosaic-algorithm` to `monocle` to select it;
-that implies enabled unless `@mosaic-enabled` is explicitly `0`.
-`@mosaic-orientation`, `@mosaic-mfact`, and `@mosaic-step` are ignored.
+No layout-specific options. Set `@mosaic-algorithm` to `monocle` to select it.
+Unset `@mosaic-algorithm` to disable mosaic on that window. `@mosaic-orientation`,
+`@mosaic-mfact`, and `@mosaic-step` are ignored.
 
 ## Example use
 

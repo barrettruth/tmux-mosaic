@@ -14,15 +14,15 @@
 
 | Op                 | Support | Behavior                               |
 | ------------------ | ------- | -------------------------------------- |
-| `toggle`           | yes     | Enable or disable tiling on the window |
+| `toggle`           | yes     | Turn the current window layout off     |
 | `relayout`         | yes     | Re-apply tmux's `tiled` layout         |
 | `promote`          | no      | Surfaces a tmux message                |
 | `resize-master ±N` | no      | Surfaces a tmux message                |
 
 ## Relevant options
 
-No layout-specific options. Set `@mosaic-algorithm` to `grid` to select it; that
-implies enabled unless `@mosaic-enabled` is explicitly `0`.
+No layout-specific options. Set `@mosaic-algorithm` to `grid` to select it.
+Unset `@mosaic-algorithm` to disable mosaic on that window.
 `@mosaic-orientation`, `@mosaic-mfact`, and `@mosaic-step` are ignored.
 
 ## Example use

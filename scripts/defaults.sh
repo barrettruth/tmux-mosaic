@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 mosaic_set_defaults() {
-  tmux set-option -gq "@mosaic-default-algorithm" "master-stack"
   tmux set-option -gwq "@mosaic-orientation" "left"
   tmux set-option -gq "@mosaic-mfact" "50"
   tmux set-option -gq "@mosaic-step" "5"

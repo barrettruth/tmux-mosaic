@@ -36,12 +36,6 @@ mosaic_window_has_algorithm() {
 
 mosaic_enabled() {
   local target="${1:-}"
-  local val
-  val=$(mosaic_get_w_raw "@mosaic-enabled" "$target")
-  case "$val" in
-  1 | on | true) return 0 ;;
-  0 | off | false) return 1 ;;
-  esac
   mosaic_window_has_algorithm "$target"
 }
 
@@ -85,19 +79,13 @@ mosaic_can_relayout_window() {
 }
 
 mosaic_toggle_window() {
-  local relayout_fn="$1" win
+  local _relayout_fn="${1:-}" win
   win=$(mosaic_current_window)
-  if mosaic_enabled "$win"; then
-    if mosaic_window_has_algorithm "$win"; then
-      tmux set-option -wq -t "$win" "@mosaic-enabled" 0
-    else
-      tmux set-option -wqu -t "$win" "@mosaic-enabled" 2>/dev/null
-    fi
+  if mosaic_window_has_algorithm "$win"; then
+    tmux set-option -wqu -t "$win" "@mosaic-algorithm" 2>/dev/null
     mosaic_show_message "mosaic: off"
   else
-    tmux set-option -wq -t "$win" "@mosaic-enabled" 1
-    mosaic_show_message "mosaic: on"
-    "$relayout_fn" "$win"
+    mosaic_show_message "mosaic: no layout configured"
   fi
 }
 
