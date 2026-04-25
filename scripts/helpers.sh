@@ -18,11 +18,31 @@ mosaic_get_w() {
   printf '%s\n' "${val:-$default}"
 }
 
+mosaic_get_w_raw() {
+  local opt="$1" target="${2:-}"
+  local val
+  if [[ -n "$target" ]]; then
+    val=$(tmux show-option -wqv -t "$target" "$opt" 2>/dev/null)
+  else
+    val=$(tmux show-option -wqv "$opt" 2>/dev/null)
+  fi
+  printf '%s\n' "$val"
+}
+
+mosaic_window_has_algorithm() {
+  local target="${1:-}"
+  [[ -n "$(mosaic_get_w_raw "@mosaic-algorithm" "$target")" ]]
+}
+
 mosaic_enabled() {
   local target="${1:-}"
   local val
-  val=$(mosaic_get_w "@mosaic-enabled" "0" "$target")
-  [[ "$val" == "1" ]] || [[ "$val" == "on" ]] || [[ "$val" == "true" ]]
+  val=$(mosaic_get_w_raw "@mosaic-enabled" "$target")
+  case "$val" in
+  1 | on | true) return 0 ;;
+  0 | off | false) return 1 ;;
+  esac
+  mosaic_window_has_algorithm "$target"
 }
 
 mosaic_current_window() { tmux display-message -p '#{window_id}'; }
@@ -68,7 +88,11 @@ mosaic_toggle_window() {
   local relayout_fn="$1" win
   win=$(mosaic_current_window)
   if mosaic_enabled "$win"; then
-    tmux set-option -wqu -t "$win" "@mosaic-enabled" 2>/dev/null
+    if mosaic_window_has_algorithm "$win"; then
+      tmux set-option -wq -t "$win" "@mosaic-enabled" 0
+    else
+      tmux set-option -wqu -t "$win" "@mosaic-enabled" 2>/dev/null
+    fi
     mosaic_show_message "mosaic: off"
   else
     tmux set-option -wq -t "$win" "@mosaic-enabled" 1

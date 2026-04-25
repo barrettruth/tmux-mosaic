@@ -4,10 +4,18 @@ Select an algorithm per window with:
 
 ```tmux
 set-option -wq @mosaic-algorithm grid
+```
+
+Setting `@mosaic-algorithm` on a window implies enabled.
+
+Use `@mosaic-enabled 1` when you want the current window to use the default
+algorithm without setting a window override:
+
+```tmux
 set-option -wq @mosaic-enabled 1
 ```
 
-If a window does not set `@mosaic-algorithm`, mosaic falls back to
+If an enabled window does not set `@mosaic-algorithm`, mosaic falls back to
 `@mosaic-default-algorithm`, which defaults to `master-stack`.
 
 ```tmux
@@ -16,7 +24,8 @@ set-option -gq @mosaic-default-algorithm monocle
 
 All algorithms support `toggle` and `relayout`. Unsupported operations surface a
 tmux message instead of failing hard. Mosaic only relayouts windows that are
-enabled and have more than one pane.
+enabled and have more than one pane. Set `@mosaic-enabled` to `0` if you want to
+suppress a window-specific `@mosaic-algorithm`.
 
 | Algorithm         | Default | Backing tmux layout | `promote` | `resize-master` | Notes                                     | Page                                  |
 | ----------------- | ------- | ------------------- | --------- | --------------- | ----------------------------------------- | ------------------------------------- |

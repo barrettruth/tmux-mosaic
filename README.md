@@ -1,6 +1,6 @@
 # tmux-mosaic
 
-**Opt-in pane tiling layouts for tmux**
+**Pane tiling layouts for tmux**
 
 A small tmux plugin for per-window pane tiling. Mosaic uses native tmux layouts
 where possible and installs no default keybindings.
@@ -27,17 +27,20 @@ Full behavior, supported ops, and relevant options live in
 
 ## Quick start
 
-Enable mosaic on the current window:
+Use the default `master-stack` layout on the current window:
 
 ```tmux
 set-option -wq @mosaic-enabled 1
 ```
 
-Pick a non-default algorithm if you want one:
+Or pick a specific algorithm on the current window:
 
 ```tmux
 set-option -wq @mosaic-algorithm grid
 ```
+
+Setting `@mosaic-algorithm` on a window implies enabled. `@mosaic-enabled`
+remains the explicit on or off override.
 
 Add your own bindings if you want them. Mosaic exports `@mosaic-exec` so the
 same bindings work across TPM, manual, and nix installs.
@@ -65,7 +68,9 @@ Not every algorithm implements every op. `master-stack` implements the full set;
 the other layouts support `toggle` and `relayout` only. See
 [Algorithms](docs/algorithms/README.md).
 
-`@mosaic-enabled` is window-scoped. Unset windows are untouched.
+`@mosaic-enabled` is window-scoped. If it is unset, a window-specific
+`@mosaic-algorithm` still activates mosaic for that window. Set
+`@mosaic-enabled` to `0` to suppress a configured window algorithm.
 
 For focus movement, swapping through the ring, and zoom, use stock tmux
 directly:
@@ -79,16 +84,16 @@ directly:
 
 ## Options
 
-| Option                      | Scope         | Default                                    | Purpose                                                 |
-| --------------------------- | ------------- | ------------------------------------------ | ------------------------------------------------------- |
-| `@mosaic-enabled`           | window        | unset                                      | Set to `1` to tile this window                          |
-| `@mosaic-algorithm`         | window        | (uses default)                             | Per-window algorithm override                           |
-| `@mosaic-default-algorithm` | global        | `master-stack`                             | Default for windows without override                    |
-| `@mosaic-orientation`       | window→global | `left`                                     | For `master-stack`: `left`, `right`, `top`, or `bottom` |
-| `@mosaic-mfact`             | window→global | `50`                                       | Master size as percent                                  |
-| `@mosaic-step`              | global        | `5`                                        | Default `resize-master` step                            |
-| `@mosaic-debug`             | global        | `0`                                        | Set to `1` to log to `@mosaic-log-file`                 |
-| `@mosaic-log-file`          | global        | `${TMPDIR:-/tmp}/tmux-mosaic-$(id -u).log` | Log path when debug is on                               |
+| Option                      | Scope         | Default                                    | Purpose                                                                                               |
+| --------------------------- | ------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `@mosaic-enabled`           | window        | unset                                      | Explicit on or off override. Set `1` for the default algorithm; set `0` to suppress a window override |
+| `@mosaic-algorithm`         | window        | (uses default)                             | Per-window algorithm override                                                                         |
+| `@mosaic-default-algorithm` | global        | `master-stack`                             | Default for enabled windows without a window override                                                 |
+| `@mosaic-orientation`       | window→global | `left`                                     | For `master-stack`: `left`, `right`, `top`, or `bottom`                                               |
+| `@mosaic-mfact`             | window→global | `50`                                       | Master size as percent                                                                                |
+| `@mosaic-step`              | global        | `5`                                        | Default `resize-master` step                                                                          |
+| `@mosaic-debug`             | global        | `0`                                        | Set to `1` to log to `@mosaic-log-file`                                                               |
+| `@mosaic-log-file`          | global        | `${TMPDIR:-/tmp}/tmux-mosaic-$(id -u).log` | Log path when debug is on                                                                             |
 
 ## Limits
 
