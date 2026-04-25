@@ -163,6 +163,11 @@ split, and panes exit.
 Equal-width panes in a row via tmux's native `even-horizontal` layout. Set
 `@mosaic-algorithm` to `even-horizontal` on a window to use it.
 
+### grid
+
+Equal-size panes in a grid via tmux's native `tiled` layout. Set
+`@mosaic-algorithm` to `grid` on a window to use it.
+
 ## FAQ
 
 **Q: Why doesn't `promote` toggle when I'm already master?**
