@@ -4,6 +4,42 @@ algo_pane_count() { tmux display-message -p '#{window_panes}'; }
 algo_pane_index() { tmux display-message -p '#{pane_index}'; }
 algo_pane_base() { tmux display-message -p '#{e|+|:0,#{?pane-base-index,#{pane-base-index},0}}'; }
 
+algo_orientation_for() {
+  local win="$1" val
+  val=$(mosaic_get_w "@mosaic-orientation" "left" "$win")
+  case "$val" in
+  left | right | top | bottom)
+    echo "$val"
+    ;;
+  *)
+    mosaic_log "orientation: invalid=$val win=$win defaulting=left"
+    echo "left"
+    ;;
+  esac
+}
+
+algo_layout_for() {
+  case "$1" in
+  left) echo "main-vertical" ;;
+  right) echo "main-vertical-mirrored" ;;
+  top) echo "main-horizontal" ;;
+  bottom) echo "main-horizontal-mirrored" ;;
+  esac
+}
+
+algo_main_option_for() {
+  case "$1" in
+  left | right) echo "main-pane-width" ;;
+  top | bottom) echo "main-pane-height" ;;
+  esac
+}
+
+algo_apply_layout() {
+  local win="$1" orientation="$2" mfact="$3"
+  tmux set-window-option -t "$win" "$(algo_main_option_for "$orientation")" "${mfact}%" 2>/dev/null || true
+  tmux select-layout -t "$win" "$(algo_layout_for "$orientation")" 2>/dev/null || true
+}
+
 algo_mfact_for() {
   local win="$1"
   local val
@@ -35,13 +71,13 @@ algo_relayout() {
   n=$(tmux list-panes -t "$win" 2>/dev/null | wc -l)
   [[ "$n" -le 1 ]] && return 0
 
-  local mfact
+  local mfact orientation
   mfact=$(algo_mfact_for "$win")
+  orientation=$(algo_orientation_for "$win")
 
-  tmux set-window-option -t "$win" main-pane-width "${mfact}%" 2>/dev/null || true
-  tmux select-layout -t "$win" main-vertical 2>/dev/null || true
+  algo_apply_layout "$win" "$orientation" "$mfact"
 
-  mosaic_log "relayout: win=$win n=$n mfact=$mfact"
+  mosaic_log "relayout: win=$win n=$n orientation=$orientation mfact=$mfact"
 }
 
 algo_toggle() {
@@ -97,17 +133,26 @@ algo_sync_state() {
   n=$(tmux list-panes -t "$win" 2>/dev/null | wc -l)
   [[ "$n" -le 1 ]] && return 0
 
-  local pbase pane_w window_w pct
+  local pbase pane_size window_size pct orientation
+  orientation=$(algo_orientation_for "$win")
   pbase=$(algo_pane_base)
-  pane_w=$(tmux display-message -p -t "$win.$pbase" '#{pane_width}' 2>/dev/null)
-  window_w=$(tmux display-message -p -t "$win" '#{window_width}' 2>/dev/null)
-  [[ -z "$pane_w" ]] && return 0
-  [[ -z "$window_w" || "$window_w" -le 0 ]] && return 0
+  case "$orientation" in
+  left | right)
+    pane_size=$(tmux display-message -p -t "$win.$pbase" '#{pane_width}' 2>/dev/null)
+    window_size=$(tmux display-message -p -t "$win" '#{window_width}' 2>/dev/null)
+    ;;
+  top | bottom)
+    pane_size=$(tmux display-message -p -t "$win.$pbase" '#{pane_height}' 2>/dev/null)
+    window_size=$(tmux display-message -p -t "$win" '#{window_height}' 2>/dev/null)
+    ;;
+  esac
+  [[ -z "$pane_size" ]] && return 0
+  [[ -z "$window_size" || "$window_size" -le 0 ]] && return 0
 
-  pct=$((pane_w * 100 / window_w))
+  pct=$((pane_size * 100 / window_size))
   [[ "$pct" -lt 5 ]] && pct=5
   [[ "$pct" -gt 95 ]] && pct=95
 
   tmux set-option -wq -t "$win" "@mosaic-mfact" "$pct"
-  mosaic_log "sync-state: win=$win pane_w=$pane_w window_w=$window_w pct=$pct"
+  mosaic_log "sync-state: win=$win orientation=$orientation pane_size=$pane_size window_size=$window_size pct=$pct"
 }

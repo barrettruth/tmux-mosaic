@@ -92,7 +92,7 @@ mosaic exposes four operations. Everything else is stock tmux.
 |---|---|
 | `toggle` | Enable/disable tiling on the current window |
 | `promote` | Move focused stack pane to master. On master: swap with stack-top (Hyprland's `swapwithmaster auto`) |
-| `resize-master ±N` | Adjust master width by N percent (clamped 5–95) |
+| `resize-master ±N` | Adjust master size by N percent (clamped 5–95) |
 | `relayout` | Force re-apply the current algorithm (rarely needed — hooks fire on splits, kills, exits, and resizes) |
 
 For the non-master-stack-specific ops, use stock tmux directly:
@@ -104,7 +104,7 @@ For the non-master-stack-specific ops, use stock tmux directly:
 | Swap focused pane through the ring (Hyprland `swapnext` / `swapprev`) | `swap-pane -D` / `-U` |
 | Zoom focused pane (monocle equivalent) | `resize-pane -Z` |
 
-These work because mosaic keeps the layout as `main-vertical`, which positions panes by index. Tmux's index-order ops then traverse the master/stack ring exactly as Hyprland's master layout does.
+These work because mosaic keeps the layout in tmux's `main-*` family, which positions panes by index and keeps pane 1 as the master. Tmux's index-order ops then traverse the master/stack ring exactly as Hyprland's master layout does.
 
 ## Options
 
@@ -113,7 +113,8 @@ These work because mosaic keeps the layout as `main-vertical`, which positions p
 | `@mosaic-enabled` | window | unset | Set to `1` to tile this window |
 | `@mosaic-algorithm` | window | (uses default) | Per-window algorithm override |
 | `@mosaic-default-algorithm` | global | `master-stack` | Default for windows without override |
-| `@mosaic-mfact` | window→global | `50` | Master width as percent (window-scoped value wins) |
+| `@mosaic-orientation` | window→global | `left` | For `master-stack`: `left`, `right`, `top`, or `bottom` |
+| `@mosaic-mfact` | window→global | `50` | Master size as percent (window-scoped value wins) |
 | `@mosaic-step` | global | `5` | Default `resize-master` step |
 | `@mosaic-debug` | global | `0` | Set to `1` to log to `@mosaic-log-file` |
 | `@mosaic-log-file` | global | `${TMPDIR:-/tmp}/tmux-mosaic-$(uid).log` | Log path when debug on |
@@ -139,8 +140,9 @@ The dispatcher (`scripts/ops.sh`) sources the file selected by
 ### master-stack
 
 Faithful to Hyprland's master layout with `nmaster=1`, `new_status=slave`,
-`new_on_top=false`. Implemented atop tmux's native `main-vertical` +
-`main-pane-width <pct>%` + `swap-pane -D/-U`. The `swap-pane -D/-U` ring
+`new_on_top=false`. Implemented atop tmux's native `main-vertical`,
+`main-horizontal`, and mirrored variants, plus `main-pane-width <pct>%` /
+`main-pane-height <pct>%` + `swap-pane -D/-U`. The `swap-pane -D/-U` ring
 matches `MasterAlgorithm::getNextTarget` — same-category neighbor first,
 falls back across the master/stack boundary at the ring edges.
 
@@ -169,13 +171,9 @@ acting. Unset windows are inert.
 
 ## Known Limitations
 
-- **Single master.** Tmux's `main-vertical` is hardcoded to one master pane.
-  Multi-master would require hand-rolled layout strings; intentionally out of
-  scope for v0.x.
-
-- **Single orientation (left-master).** Top/right/bottom orientations are
-  achievable with `main-horizontal` and `*-mirrored` variants but require
-  per-orientation algorithm files. Not yet shipped.
+- **Single master.** Tmux's native `main-*` layouts are hardcoded to one
+  master pane. Multi-master would require hand-rolled layout strings;
+  intentionally out of scope for v0.x.
 
 - **No per-pane height factors.** Hyprland's `percSize` lets you bias one
   slave taller than the others. Tmux can express this via custom layout
@@ -185,7 +183,7 @@ acting. Unset windows are inert.
 - **Hooks fire only on tmux's structural events.** mosaic intercepts
   `after-split-window`, `after-kill-pane`, `pane-exited`, `pane-died`, and
   `after-resize-pane`. Operations that bypass these (e.g. direct
-  `select-layout` to a non-master-vertical layout, or `move-pane`
+  `select-layout` to a non-`main-*` layout, or `move-pane`
   reordering) won't trigger relayout. Run `relayout` explicitly if needed.
 
 # Acknowledgements
