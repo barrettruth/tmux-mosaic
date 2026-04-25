@@ -7,25 +7,25 @@ where possible and installs no default keybindings.
 
 ## Dependencies
 
-- tmux 3.2+
-- bash
+- [tmux](https://github.com/tmux/tmux) 3.2+
+- [bash](https://git.savannah.gnu.org/cgit/bash.git)
 
 ## [Installation](INSTALLATION.md)
 
 TPM, manual, and nix setup live in [INSTALLATION.md](INSTALLATION.md).
 
-## Algorithms
+## [Layouts](docs/layouts/)
 
-- `master-stack` — default; one master pane plus equal-split stack
-- `even-vertical` — equal-height column
-- `even-horizontal` — equal-width row
-- `grid` — tmux `tiled`
-- `monocle` — keep the focused pane zoomed
+- [`master-stack`](docs/layouts/master-stack.md#master-stack) — default; one
+  master pane plus equal-split stack
+- [`even-vertical`](docs/layouts/even-vertical.md#even-vertical) — equal-height
+  column
+- [`even-horizontal`](docs/layouts/even-horizontal.md#even-horizontal) —
+  equal-width row
+- [`grid`](docs/layouts/grid.md#grid) — tmux `tiled`
+- [`monocle`](docs/layouts/monocle.md#monocle) — keep the focused pane zoomed
 
-Full behavior, supported ops, and relevant options live in
-[docs/algorithms](docs/algorithms/README.md).
-
-## Quick start
+## Quick Start
 
 Use the default `master-stack` layout on the current window:
 
@@ -33,7 +33,7 @@ Use the default `master-stack` layout on the current window:
 set-option -wq @mosaic-enabled 1
 ```
 
-Or pick a specific algorithm on the current window:
+Or pick a specific layout on the current window:
 
 ```tmux
 set-option -wq @mosaic-algorithm grid
@@ -64,9 +64,9 @@ default.
 | `resize-master ±N` | Adjust master size by N percent, clamped to 5–95                                         |
 | `relayout`         | Force re-apply the current algorithm when you need to recover from manual layout changes |
 
-Not every algorithm implements every op. `master-stack` implements the full set;
+Not every layout implements every op. `master-stack` implements the full set;
 the other layouts support `toggle` and `relayout` only. See
-[Algorithms](docs/algorithms/README.md).
+[Layouts](docs/layouts/).
 
 `@mosaic-enabled` is window-scoped. If it is unset, a window-specific
 `@mosaic-algorithm` still activates mosaic for that window. Set
@@ -95,7 +95,7 @@ directly:
 | `@mosaic-debug`             | global        | `0`                                        | Set to `1` to log to `@mosaic-log-file`                                                               |
 | `@mosaic-log-file`          | global        | `${TMPDIR:-/tmp}/tmux-mosaic-$(id -u).log` | Log path when debug is on                                                                             |
 
-## Limits
+## Limitations
 
 - Single master only. Tmux's native `main-*` layouts are hardcoded to one master
   pane.

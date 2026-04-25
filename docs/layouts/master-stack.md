@@ -1,6 +1,6 @@
 # master-stack
 
-`master-stack` is the default algorithm. It keeps one primary pane and an
+`master-stack` is the default layout. It keeps one primary pane and an
 equal-split stack using tmux's `main-*` layouts.
 
 ## Behavior

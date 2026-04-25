@@ -22,7 +22,7 @@
 
 ## Relevant options
 
-No algorithm-specific options. Set `@mosaic-algorithm` to `even-horizontal` to
+No layout-specific options. Set `@mosaic-algorithm` to `even-horizontal` to
 select it; that implies enabled unless `@mosaic-enabled` is explicitly `0`.
 `@mosaic-orientation`, `@mosaic-mfact`, and `@mosaic-step` are ignored.
 

@@ -23,8 +23,8 @@
 
 ## Relevant options
 
-No algorithm-specific options. Set `@mosaic-algorithm` to `monocle` to select
-it; that implies enabled unless `@mosaic-enabled` is explicitly `0`.
+No layout-specific options. Set `@mosaic-algorithm` to `monocle` to select it;
+that implies enabled unless `@mosaic-enabled` is explicitly `0`.
 `@mosaic-orientation`, `@mosaic-mfact`, and `@mosaic-step` are ignored.
 
 ## Example use

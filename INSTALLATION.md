@@ -57,7 +57,7 @@ Use the default `master-stack` layout on the current window:
 set-option -wq @mosaic-enabled 1
 ```
 
-Or pick a specific algorithm on the current window:
+Or pick a specific layout on the current window:
 
 ```tmux
 set-option -wq @mosaic-algorithm grid
@@ -75,5 +75,5 @@ bind T run '#{E:@mosaic-exec} toggle'
 ```
 
 For focus movement, swapping, and zoom, keep using stock tmux commands. For
-per-algorithm behavior, supported ops, and options, see
-[docs/algorithms](docs/algorithms/README.md).
+per-layout behavior, supported ops, and options, see
+[docs/layouts](docs/layouts/).
