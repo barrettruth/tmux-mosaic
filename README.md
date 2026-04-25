@@ -13,28 +13,42 @@ TPM, manual, and nix setup live in [INSTALLATION.md](INSTALLATION.md).
 
 ## Quick Start
 
-tmux-mosaic does _not_ bundle keymaps. Say you like `master-stack` everywhere
-by default, but one window looks better as `grid`. Set the global default, bind
-the `master-stack` ops you care about, and add a few per-window layout
-switches:
+tmux-mosaic does _not_ bundle keymaps.
+
+Start by making `master-stack` the global default:
 
 ```tmux
 set-option -gwq @mosaic-algorithm master-stack
+```
+
+Then bind the `master-stack` operations you care about:
+
+```tmux
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r ,  run '#{E:@mosaic-exec} resize-master -5'
 bind -r .  run '#{E:@mosaic-exec} resize-master +5'
 bind T     run '#{E:@mosaic-exec} toggle'
+```
+
+If one window looks better as `grid`, switch just that window:
+
+```tmux
 bind G     set-option -wq @mosaic-algorithm grid
+```
+
+Keep a few other layout switches nearby if you want them:
+
+```tmux
 bind V     set-option -wq @mosaic-algorithm even-vertical
 bind H     set-option -wq @mosaic-algorithm even-horizontal
 bind Z     set-option -wq @mosaic-algorithm monocle
 bind U     set-option -wqu @mosaic-algorithm
 ```
 
-Most windows now inherit `master-stack`. If one window wants `grid`, hit `G`
-there. If you want to go back to the global default, hit `U`.
+Most windows now inherit `master-stack`. Hit `G` in the one window that wants
+`grid`. Hit `U` to go back to the global default.
 
-See [Layouts](docs/layouts/) for the layout pages and global options.
+See [Layouts](docs/layouts/) for per-layout behavior and examples.
 
 ## [Layouts](docs/layouts/)
 
