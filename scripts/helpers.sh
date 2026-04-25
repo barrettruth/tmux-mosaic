@@ -40,6 +40,21 @@ mosaic_window_zoomed() {
   tmux display-message -p -t "$(mosaic_resolve_window "${1:-}")" '#{window_zoomed_flag}'
 }
 
+mosaic_first_client() {
+  tmux list-clients -F '#{client_name}' 2>/dev/null | head -n1
+}
+
+mosaic_show_message() {
+  local message="$*" client
+  client=$(tmux display-message -p '#{client_name}' 2>/dev/null)
+  [[ -z "$client" ]] && client=$(mosaic_first_client)
+  if [[ -n "$client" ]]; then
+    tmux display-message -c "$client" "$message"
+  else
+    printf '%s\n' "$message" >&2
+  fi
+}
+
 mosaic_can_relayout_window() {
   local win="$1" n="$2"
   if ! mosaic_enabled "$win"; then
@@ -54,10 +69,10 @@ mosaic_toggle_window() {
   win=$(mosaic_current_window)
   if mosaic_enabled "$win"; then
     tmux set-option -wqu -t "$win" "@mosaic-enabled" 2>/dev/null
-    tmux display-message "mosaic: off"
+    mosaic_show_message "mosaic: off"
   else
     tmux set-option -wq -t "$win" "@mosaic-enabled" 1
-    tmux display-message "mosaic: on"
+    mosaic_show_message "mosaic: on"
     "$relayout_fn" "$win"
   fi
 }

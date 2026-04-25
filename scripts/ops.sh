@@ -45,12 +45,13 @@ if ! load_algorithm "$algo"; then
 fi
 
 dispatch_optional() {
-  local fn="$1"
+  local fn="$1" message
   shift
   if declare -f "$fn" >/dev/null; then
     "$fn" "$@"
   else
-    tmux display-message "mosaic: $algo does not implement ${fn#algo_}"
+    message="mosaic: $algo does not implement ${fn#algo_}"
+    mosaic_show_message "$message"
   fi
 }
 
