@@ -4,18 +4,6 @@ Layouts are the pane arrangements Mosaic can apply. The table below lists the
 available layouts, the tmux primitive behind each one, and which operations
 they support.
 
-## Global options
-
-| Option              | Default | Effect                                              |
-| ------------------- | ------- | --------------------------------------------------- |
-| `@mosaic-algorithm` | unset   | Global default layout for windows without a local override |
-| `@mosaic-step`      | `5`     | Default `resize-master` step                        |
-
-`master-stack` also uses `@mosaic-orientation` and `@mosaic-mfact`; see the
-[`master-stack`](master-stack.md) page for those.
-
-## Available layouts
-
 | Layout            | Backing tmux layout | `promote` | `resize-master` | Notes                                     | Page                                  |
 | ----------------- | ------------------- | --------- | --------------- | ----------------------------------------- | ------------------------------------- |
 | `master-stack`    | `main-*` family     | yes       | yes             | One master pane plus equal-split stack    | [master-stack](master-stack.md)       |

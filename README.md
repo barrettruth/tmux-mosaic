@@ -48,7 +48,7 @@ bind U     set-option -wqu @mosaic-algorithm
 Most windows now inherit `master-stack`. Hit `G` in the one window that wants
 `grid`. Hit `U` to go back to the global default.
 
-See [Layouts](docs/layouts/) for the layout pages and global options.
+See [Layouts](docs/layouts/) for per-layout behavior and examples.
 
 ## [Layouts](docs/layouts/)
 
