@@ -21,4 +21,4 @@ changelog:
         - documentation
     - title: Other Changes
       labels:
-        - "*"
+        - '*'

@@ -1,20 +1,13 @@
 default:
     @just --list
 
-nixfmt:
+format:
     nix fmt -- --ci
-
-shfmt:
     shfmt -i 2 -d mosaic.tmux scripts tests
+    prettier --check .
 
-shellcheck:
+lint:
     shellcheck -x --source-path=SCRIPTDIR --source-path=SCRIPTDIR/scripts mosaic.tmux scripts/*.sh scripts/algorithms/*.sh tests/helpers.bash
-
-format: nixfmt shfmt
-    @:
-
-lint: shellcheck
-    @:
 
 test:
     bats tests/integration/*.bats

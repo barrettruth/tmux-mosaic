@@ -37,6 +37,7 @@
                 ".github"
                 ".gitignore"
                 ".editorconfig"
+                ".prettierrc"
                 "flake.nix"
                 "flake.lock"
                 "justfile"
@@ -55,6 +56,7 @@
             pkgs.bats
             pkgs.shellcheck
             pkgs.shfmt
+            pkgs.prettier
             pkgs.tmux
             pkgs.just
           ];

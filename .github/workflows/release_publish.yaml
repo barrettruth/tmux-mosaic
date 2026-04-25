@@ -2,7 +2,7 @@ name: Publish Release
 
 on:
   workflow_run:
-    workflows: ["quality"]
+    workflows: ['quality']
     types: [completed]
 
 permissions:
@@ -16,7 +16,9 @@ concurrency:
 
 jobs:
   publish_release:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    if:
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -108,7 +110,10 @@ jobs:
               --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
       - name: Open or update next dev PR
-        if: steps.state.outputs.publish == 'true' && steps.state.outputs.current_main_version == steps.state.outputs.version
+        if:
+          steps.state.outputs.publish == 'true' &&
+          steps.state.outputs.current_main_version ==
+          steps.state.outputs.version
         run: |
           branch="release/next-${{ steps.state.outputs.next_dev }}"
           title="chore(release): start ${{ steps.state.outputs.next_dev }}"
