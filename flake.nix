@@ -22,7 +22,7 @@
       packages = forEachSystem (pkgs: {
         default = pkgs.tmuxPlugins.mkTmuxPlugin {
           pluginName = "mosaic";
-          version = "0.1.0";
+          version = "0.0.1";
           rtpFilePath = "mosaic.tmux";
           src = pkgs.lib.cleanSourceWith {
             src = ./.;
