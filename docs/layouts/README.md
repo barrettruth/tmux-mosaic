@@ -6,31 +6,22 @@ Select a layout per window with:
 set-option -wq @mosaic-algorithm grid
 ```
 
-Setting `@mosaic-algorithm` on a window implies enabled.
-
-Use `@mosaic-enabled 1` when you want the current window to use the default
-layout without setting a window override:
+Unset it to turn mosaic off on that window:
 
 ```tmux
-set-option -wq @mosaic-enabled 1
-```
-
-If an enabled window does not set `@mosaic-algorithm`, mosaic falls back to
-`@mosaic-default-algorithm`, which defaults to `master-stack`.
-
-```tmux
-set-option -gq @mosaic-default-algorithm monocle
+set-option -wqu @mosaic-algorithm
 ```
 
 All layouts support `toggle` and `relayout`. Unsupported operations surface a
-tmux message instead of failing hard. Mosaic only relayouts windows that are
-enabled and have more than one pane. Set `@mosaic-enabled` to `0` if you want to
-suppress a window-specific `@mosaic-algorithm`.
+tmux message instead of failing hard. `toggle` turns the current window layout
+off. Mosaic only relayouts windows whose `@mosaic-algorithm` is set and that
+have more than one pane. Invalid algorithm names fail when an operation tries
+to load them.
 
-| Layout            | Default | Backing tmux layout | `promote` | `resize-master` | Notes                                     | Page                                  |
-| ----------------- | ------- | ------------------- | --------- | --------------- | ----------------------------------------- | ------------------------------------- |
-| `master-stack`    | yes     | `main-*` family     | yes       | yes             | One master pane plus equal-split stack    | [master-stack](master-stack.md)       |
-| `even-vertical`   | no      | `even-vertical`     | no        | no              | Equal-height panes in one column          | [even-vertical](even-vertical.md)     |
-| `even-horizontal` | no      | `even-horizontal`   | no        | no              | Equal-width panes in one row              | [even-horizontal](even-horizontal.md) |
-| `grid`            | no      | `tiled`             | no        | no              | Equal-size grid using tmux's tiled layout | [grid](grid.md)                       |
-| `monocle`         | no      | tmux zoom           | no        | no              | Keeps the focused pane zoomed             | [monocle](monocle.md)                 |
+| Layout            | Backing tmux layout | `promote` | `resize-master` | Notes                                     | Page                                  |
+| ----------------- | ------------------- | --------- | --------------- | ----------------------------------------- | ------------------------------------- |
+| `master-stack`    | `main-*` family     | yes       | yes             | One master pane plus equal-split stack    | [master-stack](master-stack.md)       |
+| `even-vertical`   | `even-vertical`     | no        | no              | Equal-height panes in one column          | [even-vertical](even-vertical.md)     |
+| `even-horizontal` | `even-horizontal`   | no        | no              | Equal-width panes in one row              | [even-horizontal](even-horizontal.md) |
+| `grid`            | `tiled`             | no        | no              | Equal-size grid using tmux's tiled layout | [grid](grid.md)                       |
+| `monocle`         | tmux zoom           | no        | no              | Keeps the focused pane zoomed             | [monocle](monocle.md)                 |

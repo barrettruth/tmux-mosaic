@@ -29,8 +29,9 @@ mosaic_teardown_server() {
   mosaic_t kill-server 2>/dev/null || true
 }
 
-mosaic_enable() {
-  mosaic_t set-option -wq -t "${1:-t:1}" "@mosaic-enabled" 1
+mosaic_use_algorithm() {
+  local algo="${1:?algorithm required}" target="${2:-t:1}"
+  mosaic_t set-option -wq -t "$target" "@mosaic-algorithm" "$algo"
 }
 
 mosaic_split() {

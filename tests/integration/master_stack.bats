@@ -4,7 +4,7 @@ load '../helpers.bash'
 
 setup() {
   mosaic_setup_server
-  mosaic_enable
+  mosaic_use_algorithm master-stack
 }
 
 teardown() {
@@ -61,7 +61,7 @@ assert_orientation_layout() {
 
   run mosaic_t show-option -gqv @mosaic-default-algorithm
   [ "$status" -eq 0 ]
-  [ "$output" = "master-stack" ]
+  [ -z "$output" ]
 
   run mosaic_t show-option -gwqv @mosaic-orientation
   [ "$status" -eq 0 ]
@@ -169,7 +169,7 @@ assert_orientation_layout() {
 @test "resize-master on two windows is independent" {
   mosaic_split
   mosaic_t new-window -t t: "sleep 3600"
-  mosaic_t set-option -wq -t t:2 @mosaic-enabled 1
+  mosaic_use_algorithm master-stack t:2
   mosaic_t split-window -t t:2 "sleep 3600"
   sleep 0.15
 
@@ -208,25 +208,27 @@ assert_orientation_layout() {
 }
 
 @test "disabled window: splits do NOT retile" {
-  mosaic_t set-option -wqu -t t:1 "@mosaic-enabled"
+  mosaic_t set-option -wqu -t t:1 "@mosaic-algorithm"
   mosaic_split
   mosaic_split
   layout=$(mosaic_layout)
   [[ "$layout" != *"{"* ]] || [ "$(mosaic_pane_count)" -le 1 ]
 }
 
-@test "toggle: enable/disable transitions correctly" {
-  mosaic_t set-option -wqu -t t:1 "@mosaic-enabled"
-  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-enabled)" ]
+@test "toggle: clears the current window layout" {
+  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" = "master-stack" ]
   mosaic_op toggle
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-enabled)" = "1" ]
-  mosaic_op toggle
-  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-enabled)" ]
+  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
 }
 
-@test "window-specific algorithm: toggle off writes 0 and disables relayout" {
+@test "toggle: window without a layout stays inert" {
+  mosaic_t set-option -wqu -t t:1 "@mosaic-algorithm"
+  mosaic_op toggle
+  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
+}
+
+@test "toggle: clearing the window layout disables relayout" {
   mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "even-vertical"
-  mosaic_t set-option -wqu -t t:1 "@mosaic-enabled"
   for _ in 1 2; do mosaic_split; done
 
   layout=$(mosaic_layout)
@@ -234,7 +236,7 @@ assert_orientation_layout() {
   [[ "$layout" != *"{"* ]]
 
   mosaic_op toggle
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-enabled)" = "0" ]
+  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
 
   mosaic_t select-layout -t t:1 even-horizontal
   mosaic_op relayout
@@ -245,8 +247,8 @@ assert_orientation_layout() {
 }
 
 @test "unknown algorithm: dispatcher errors cleanly" {
-  mosaic_t set-option -gq "@mosaic-default-algorithm" "nonexistent-algo"
-  run mosaic_exec_direct focus-next
+  mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "nonexistent-algo"
+  run mosaic_exec_direct relayout
   [ "$status" -ne 0 ]
   [[ "$output" == *"unknown algorithm"* ]]
 }
