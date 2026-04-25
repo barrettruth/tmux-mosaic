@@ -14,43 +14,56 @@
 Mosaic installs no default keybindings. It sets `@mosaic-exec` so your own
 bindings work across install methods.
 
+<details>
+<summary>TPM</summary>
+
 ### TPM
 
-Add mosaic to your tmux config:
+1. Add mosaic to your tmux config:
 
 ```tmux
 set -g @plugin 'barrettruth/tmux-mosaic'
 ```
 
-Install plugins with `prefix + I` if you use TPM.
+2. Install the plugin with TPM
+</details>
+
+<details>
+<summary>Manual</summary>
 
 ### Manual
 
-Clone the repo somewhere tmux can reach it:
+1. Clone the repo somewhere tmux can reach it:
 
-```sh
-git clone https://github.com/barrettruth/tmux-mosaic ~/.config/tmux/plugins/tmux-mosaic
+```console
+$ git clone git@github.com:barrettruth/tmux-mosaic \
+    ${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/tmux-mosaic
 ```
 
-Source the plugin from your tmux config:
+2. Source the plugin from your tmux config:
 
 ```tmux
-run-shell ~/.config/tmux/plugins/tmux-mosaic/mosaic.tmux
+run-shell ${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/tmux-mosaic/mosaic.tmux
 ```
+</details>
+
+<details>
+<summary>Nix</summary>
 
 ### Nix
 
-Add the flake input:
+1. Add the flake input:
 
 ```nix
 inputs.tmux-mosaic.url = "github:barrettruth/tmux-mosaic";
 ```
 
-Source the packaged plugin from your tmux wrapper config:
+2. Source the packaged plugin from your tmux wrapper config:
 
 ```tmux
 run-shell ${tmux-mosaic.packages.${system}.default}/share/tmux-plugins/mosaic/mosaic.tmux
 ```
+</details>
 
 ## Quick Start
 
@@ -81,27 +94,12 @@ If you change your mind, go back to the global default:
 bind U     set-option -wqu @mosaic-algorithm
 ```
 
-Most windows now inherit `master-stack`. Hit `G` in the one window that wants
-`grid`. Hit `U` to go back to the global default.
-
-See the layout folds below for per-layout behavior and examples.
-
 ## Layouts
 
-Layouts are the pane arrangements Mosaic can apply. The table below lists the
-available layouts, the tmux primitive behind each one, and which operations
-they support.
-
-| Layout | Backing tmux layout | `promote` | `resize-master` | Notes |
-| --- | --- | --- | --- | --- |
-| `master-stack` | `main-*` family | yes | yes | One master pane plus equal-split stack |
-| `even-vertical` | `even-vertical` | no | no | Equal-height panes in one column |
-| `even-horizontal` | `even-horizontal` | no | no | Equal-width panes in one row |
-| `grid` | `tiled` | no | no | Equal-size grid using tmux's tiled layout |
-| `monocle` | tmux zoom | no | no | Keeps the focused pane zoomed |
+Layouts are the pane arrangements Mosaic can apply. The following are provided:
 
 <details>
-<summary><code>master-stack</code> — one master pane plus equal-split stack</summary>
+<summary><code>master-stack</code></summary>
 
 ### master-stack
 
@@ -147,7 +145,7 @@ bind U set-option -wqu @mosaic-algorithm
 </details>
 
 <details>
-<summary><code>even-vertical</code> — equal-height panes in one column</summary>
+<summary><code>even-vertical</code></summary>
 
 ### even-vertical
 
@@ -180,7 +178,7 @@ bind U set-option -wqu @mosaic-algorithm
 </details>
 
 <details>
-<summary><code>even-horizontal</code> — equal-width panes in one row</summary>
+<summary><code>even-horizontal</code></summary>
 
 ### even-horizontal
 
@@ -213,7 +211,7 @@ bind U set-option -wqu @mosaic-algorithm
 </details>
 
 <details>
-<summary><code>grid</code> — equal-size grid using tmux's tiled layout</summary>
+<summary><code>grid</code></summary>
 
 ### grid
 
@@ -244,7 +242,7 @@ bind U set-option -wqu @mosaic-algorithm
 </details>
 
 <details>
-<summary><code>monocle</code> — keep the focused pane zoomed</summary>
+<summary><code>monocle</code></summary>
 
 ### monocle
 
