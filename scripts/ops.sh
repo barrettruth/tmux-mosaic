@@ -4,16 +4,11 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=helpers.sh
 source "$CURRENT_DIR/helpers.sh"
 
-current_window() { tmux display-message -p '#{window_id}'; }
-
 algorithm_for_window() {
   local win="$1"
-  local algo
-  algo=$(mosaic_get_w "@mosaic-algorithm" "" "$win")
-  if [[ -z "$algo" ]]; then
-    algo=$(mosaic_get "@mosaic-default-algorithm" "master-stack")
-  fi
-  echo "$algo"
+  local fallback
+  fallback=$(mosaic_get "@mosaic-default-algorithm" "master-stack")
+  mosaic_get_w "@mosaic-algorithm" "$fallback" "$win"
 }
 
 load_algorithm() {
@@ -33,7 +28,7 @@ load_algorithm() {
 }
 
 cmd="${1:-}"
-shift || true
+[[ $# -gt 0 ]] && shift
 
 WIN_ARG=""
 case "$cmd" in
@@ -42,7 +37,7 @@ relayout | _sync-state)
   ;;
 esac
 
-target_window="${WIN_ARG:-$(current_window)}"
+target_window=$(mosaic_resolve_window "$WIN_ARG")
 algo=$(algorithm_for_window "$target_window")
 
 if ! load_algorithm "$algo"; then

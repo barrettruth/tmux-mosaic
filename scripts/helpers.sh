@@ -4,11 +4,7 @@ mosaic_get() {
   local opt="$1" default="$2"
   local val
   val=$(tmux show-option -gqv "$opt" 2>/dev/null)
-  if [[ -z "$val" ]]; then
-    echo "$default"
-  else
-    echo "$val"
-  fi
+  printf '%s\n' "${val:-$default}"
 }
 
 mosaic_get_w() {
@@ -19,11 +15,7 @@ mosaic_get_w() {
   else
     val=$(tmux show-option -wqv "$opt" 2>/dev/null)
   fi
-  if [[ -z "$val" ]]; then
-    echo "$default"
-  else
-    echo "$val"
-  fi
+  printf '%s\n' "${val:-$default}"
 }
 
 mosaic_enabled() {
@@ -31,6 +23,52 @@ mosaic_enabled() {
   local val
   val=$(mosaic_get_w "@mosaic-enabled" "0" "$target")
   [[ "$val" == "1" ]] || [[ "$val" == "on" ]] || [[ "$val" == "true" ]]
+}
+
+mosaic_current_window() { tmux display-message -p '#{window_id}'; }
+
+mosaic_resolve_window() {
+  local win="${1:-$(mosaic_current_window)}"
+  printf '%s\n' "$win"
+}
+
+mosaic_window_pane_count() {
+  tmux display-message -p -t "$(mosaic_resolve_window "${1:-}")" '#{window_panes}'
+}
+
+mosaic_window_zoomed() {
+  tmux display-message -p -t "$(mosaic_resolve_window "${1:-}")" '#{window_zoomed_flag}'
+}
+
+mosaic_can_relayout_window() {
+  local win="$1" n="$2"
+  if ! mosaic_enabled "$win"; then
+    mosaic_log "relayout: disabled on $win, skipping"
+    return 1
+  fi
+  [[ "$n" -gt 1 ]]
+}
+
+mosaic_toggle_window() {
+  local relayout_fn="$1" win
+  win=$(mosaic_current_window)
+  if mosaic_enabled "$win"; then
+    tmux set-option -wqu -t "$win" "@mosaic-enabled" 2>/dev/null
+    tmux display-message "mosaic: off"
+  else
+    tmux set-option -wq -t "$win" "@mosaic-enabled" 1
+    tmux display-message "mosaic: on"
+    "$relayout_fn" "$win"
+  fi
+}
+
+mosaic_relayout_simple() {
+  local layout="$1" win n
+  win=$(mosaic_resolve_window "${2:-}")
+  n=$(mosaic_window_pane_count "$win")
+  mosaic_can_relayout_window "$win" "$n" || return 0
+  tmux select-layout -t "$win" "$layout" 2>/dev/null || true
+  mosaic_log "relayout: win=$win n=$n layout=$layout"
 }
 
 mosaic_log() {

@@ -59,19 +59,10 @@ algo_swap_keep_focus() {
 }
 
 algo_relayout() {
-  local win="${1:-}"
-  [[ -z "$win" ]] && win=$(tmux display-message -p '#{window_id}')
-
-  if ! mosaic_enabled "$win"; then
-    mosaic_log "relayout: disabled on $win, skipping"
-    return 0
-  fi
-
-  local n
-  n=$(tmux list-panes -t "$win" 2>/dev/null | wc -l)
-  [[ "$n" -le 1 ]] && return 0
-
-  local mfact orientation
+  local win n mfact orientation
+  win=$(mosaic_resolve_window "${1:-}")
+  n=$(mosaic_window_pane_count "$win")
+  mosaic_can_relayout_window "$win" "$n" || return 0
   mfact=$(algo_mfact_for "$win")
   orientation=$(algo_orientation_for "$win")
 
@@ -80,18 +71,7 @@ algo_relayout() {
   mosaic_log "relayout: win=$win n=$n orientation=$orientation mfact=$mfact"
 }
 
-algo_toggle() {
-  local win
-  win=$(tmux display-message -p '#{window_id}')
-  if mosaic_enabled "$win"; then
-    tmux set-option -wqu -t "$win" "@mosaic-enabled" 2>/dev/null
-    tmux display-message "mosaic: off"
-  else
-    tmux set-option -wq -t "$win" "@mosaic-enabled" 1
-    tmux display-message "mosaic: on"
-    algo_relayout "$win"
-  fi
-}
+algo_toggle() { mosaic_toggle_window algo_relayout; }
 
 algo_promote() {
   local idx n pbase
@@ -115,7 +95,7 @@ algo_resize_master() {
     delta=$(mosaic_get "@mosaic-step" "5")
   fi
   local win cur new
-  win=$(tmux display-message -p '#{window_id}')
+  win=$(mosaic_current_window)
   cur=$(algo_mfact_for "$win")
   new=$((cur + delta))
   [[ "$new" -lt 5 ]] && new=5
@@ -127,10 +107,10 @@ algo_resize_master() {
 algo_sync_state() {
   local win="$1"
   mosaic_enabled "$win" || return 0
-  [[ "$(tmux display-message -p -t "$win" '#{window_zoomed_flag}')" == "1" ]] && return 0
+  [[ "$(mosaic_window_zoomed "$win")" == "1" ]] && return 0
 
   local n
-  n=$(tmux list-panes -t "$win" 2>/dev/null | wc -l)
+  n=$(mosaic_window_pane_count "$win")
   [[ "$n" -le 1 ]] && return 0
 
   local pbase pane_size window_size pct orientation
