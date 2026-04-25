@@ -216,3 +216,31 @@ teardown() {
     [ "$status" -ne 0 ]
     [[ "$output" == *"unknown algorithm"* ]]
 }
+
+@test "drag-resize: master width survives next split" {
+    mosaic_split
+    mosaic_t resize-pane -t t:1.1 -x 160
+    sleep 0.2
+    [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "80" ]
+
+    mosaic_split
+    pane_w=$(mosaic_t list-panes -t t:1 -F '#{pane_index} #{pane_width}' | awk '$1==1{print $2}')
+    [ "$pane_w" -ge 158 ]
+    [ "$pane_w" -le 161 ]
+}
+
+@test "drag-resize: zoomed pane does not poison mfact" {
+    mosaic_split
+    mosaic_t resize-pane -t t:1.1 -x 120
+    sleep 0.2
+    [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+
+    mosaic_t select-pane -t t:1.1
+    mosaic_t resize-pane -Z
+    sleep 0.2
+    [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+
+    mosaic_t resize-pane -Z
+    sleep 0.2
+    [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+}

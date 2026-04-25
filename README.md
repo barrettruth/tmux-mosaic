@@ -110,16 +110,15 @@ Each algorithm is one file under `scripts/algorithms/<name>.sh` exposing a
 fixed contract:
 
 ```
-algo_relayout <window-id>
-algo_toggle
-algo_focus_next
-algo_focus_prev
-algo_focus_master
-algo_swap_next
-algo_swap_prev
-algo_promote
-algo_resize_master <delta>
-algo_toggle_zoom
+algo_relayout <window-id>          # required
+algo_promote                       # optional
+algo_resize_master <delta>         # optional
+algo_sync_state <window-id>        # optional — sync mosaic state from current tmux state
+algo_toggle                        # optional
+algo_focus_next / algo_focus_prev  # optional (default: select-pane -t :.+/-)
+algo_focus_master                  # optional (default: focus pane at pane-base-index)
+algo_swap_next / algo_swap_prev    # optional (default: swap-pane -D/-U)
+algo_toggle_zoom                   # optional (default: resize-pane -Z)
 ```
 
 The dispatcher (`scripts/ops.sh`) sources the file selected by
@@ -168,9 +167,11 @@ acting. Unset windows are inert.
   strings, but mosaic uses native layouts only and stack heights are always
   equal-split with running remainder.
 
-- **Hooks fire only on tmux events.** External `swap-pane` calls (from
-  another plugin or your own bindings) won't trigger relayout. Run
-  `relayout` explicitly if you need it.
+- **Hooks fire only on tmux's structural events.** mosaic intercepts
+  `after-split-window`, `after-kill-pane`, `pane-exited`, `pane-died`, and
+  `after-resize-pane`. Operations that bypass these (e.g. direct
+  `select-layout` to a non-master-vertical layout, or `move-pane`
+  reordering) won't trigger relayout. Run `relayout` explicitly if needed.
 
 # Acknowledgements
 
