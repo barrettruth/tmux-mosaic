@@ -24,41 +24,32 @@ TPM, manual, and nix setup live in [INSTALLATION.md](INSTALLATION.md).
 
 ## Quick Start
 
-tmux-mosaic does _not_ bundle keymaps. You choose layouts with
-`@mosaic-algorithm`, and you bind operations yourself with `@mosaic-exec`.
+tmux-mosaic does _not_ bundle keymaps. A realistic setup is to pick a global
+default, bind the operations you use for that default, and bind a few
+per-window layout switches.
 
-To use `master-stack` on every window by default:
+For example, use `master-stack` everywhere by default, then swap one window to
+`grid` when it fits better:
 
 ```tmux
 set-option -gwq @mosaic-algorithm master-stack
-```
-
-To override just the current window:
-
-```tmux
-set-option -wq @mosaic-algorithm grid
-```
-
-To disable mosaic on just the current window:
-
-```tmux
-set-option -wq @mosaic-algorithm off
-```
-
-Unset the window-local value to fall back to the global setting again:
-
-```tmux
-set-option -wqu @mosaic-algorithm
-```
-
-Then, add your custom keybinds with `@mosaic-exec`:
-
-```tmux
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r ,  run '#{E:@mosaic-exec} resize-master -5'
 bind -r .  run '#{E:@mosaic-exec} resize-master +5'
 bind T     run '#{E:@mosaic-exec} toggle'
+bind G     set-option -wq @mosaic-algorithm grid
+bind V     set-option -wq @mosaic-algorithm even-vertical
+bind H     set-option -wq @mosaic-algorithm even-horizontal
+bind Z     set-option -wq @mosaic-algorithm monocle
+bind U     set-option -wqu @mosaic-algorithm
 ```
+
+Most windows now inherit `master-stack`. When one window wants `grid`, press
+`G` on that window. Press `U` to clear the local override and go back to the
+global default.
+
+Each layout page has a short tmux.conf example for wiring that layout into a
+real setup.
 
 ## Acknowledgements
 

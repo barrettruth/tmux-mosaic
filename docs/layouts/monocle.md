@@ -21,23 +21,12 @@
 | `promote`          | no      | Surfaces a tmux message                          |
 | `resize-master ±N` | no      | Surfaces a tmux message                          |
 
-## Relevant options
-
-No layout-specific options. Set `@mosaic-algorithm` to `monocle` to select it.
-Set `@mosaic-algorithm` to `off` on a window to disable mosaic there. Unset the
-window-local value to fall back to the global setting again.
-`@mosaic-orientation`, `@mosaic-mfact`, and `@mosaic-step` are ignored.
-
-## Example use
+## Example config
 
 ```tmux
-set-option -wq @mosaic-algorithm monocle
-```
-
-Mosaic does not install focus bindings. Use stock tmux commands to choose which
-pane becomes zoomed:
-
-```tmux
+bind Z set-option -wq @mosaic-algorithm monocle
+bind T run '#{E:@mosaic-exec} toggle'
+bind U set-option -wqu @mosaic-algorithm
 bind n select-pane -t :.+
 bind p select-pane -t :.-
 ```

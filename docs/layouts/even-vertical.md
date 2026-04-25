@@ -6,8 +6,6 @@
 ## Behavior
 
 - panes are stacked top to bottom in a single column
-- heights stay equal-split, with at most a one-cell remainder from tmux's
-  geometry
 - splits and kills re-apply the column layout while `even-vertical` is active
   on the window
 - there is no primary pane, so `promote` and `resize-master` are not implemented
@@ -21,18 +19,10 @@
 | `promote`          | no      | Surfaces a tmux message                        |
 | `resize-master ±N` | no      | Surfaces a tmux message                        |
 
-## Relevant options
-
-No layout-specific options. Set `@mosaic-algorithm` to `even-vertical` to
-select it globally or per-window. Set `@mosaic-algorithm` to `off` on a window
-to disable mosaic there. Unset the window-local value to fall back to the
-global setting again.
-`@mosaic-orientation`, `@mosaic-mfact`, and `@mosaic-step` are ignored.
-
-## Example use
+## Example config
 
 ```tmux
-set-option -wq @mosaic-algorithm even-vertical
+bind V set-option -wq @mosaic-algorithm even-vertical
+bind T run '#{E:@mosaic-exec} toggle'
+bind U set-option -wqu @mosaic-algorithm
 ```
-
-Use stock tmux commands for focus movement, swapping, and zoom.
