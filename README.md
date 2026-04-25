@@ -57,6 +57,10 @@ default.
 | `resize-master ±N` | Adjust master size by N percent, clamped to 5–95                                         |
 | `relayout`         | Force re-apply the current algorithm when you need to recover from manual layout changes |
 
+Not every algorithm implements every op. `master-stack` implements the full set;
+the other layouts support `toggle` and `relayout` only. See
+[Algorithms](docs/algorithms/README.md).
+
 For focus, swapping through the ring, and zoom, use stock tmux directly:
 
 | Want                                    | Tmux command                                              |
@@ -84,7 +88,8 @@ For focus, swapping through the ring, and zoom, use stock tmux directly:
 - [Installation](INSTALLATION.md)
 - [Algorithms](docs/algorithms/README.md)
 
-The algorithm reference is being split out in this pass and is still skeletal.
+See the algorithm pages for layout behavior, supported ops, and relevant
+options.
 
 ## Limits
 
