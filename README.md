@@ -11,25 +11,12 @@
 
 TPM, manual, and nix setup live in [INSTALLATION.md](INSTALLATION.md).
 
-## [Layouts](docs/layouts/)
-
-- [`master-stack`](docs/layouts/master-stack.md#master-stack) — one master pane
-  plus equal-split stack
-- [`even-vertical`](docs/layouts/even-vertical.md#even-vertical) — equal-height
-  column
-- [`even-horizontal`](docs/layouts/even-horizontal.md#even-horizontal) —
-  equal-width row
-- [`grid`](docs/layouts/grid.md#grid) — tmux `tiled`
-- [`monocle`](docs/layouts/monocle.md#monocle) — keep the focused pane zoomed
-
 ## Quick Start
 
-tmux-mosaic does _not_ bundle keymaps. A realistic setup is to pick a global
-default, bind the operations you use for that default, and bind a few
-per-window layout switches.
-
-For example, use `master-stack` everywhere by default, then swap one window to
-`grid` when it fits better:
+tmux-mosaic does _not_ bundle keymaps. Say you like `master-stack` everywhere
+by default, but one window looks better as `grid`. Set the global default, bind
+the `master-stack` ops you care about, and add a few per-window layout
+switches:
 
 ```tmux
 set-option -gwq @mosaic-algorithm master-stack
@@ -44,12 +31,21 @@ bind Z     set-option -wq @mosaic-algorithm monocle
 bind U     set-option -wqu @mosaic-algorithm
 ```
 
-Most windows now inherit `master-stack`. When one window wants `grid`, press
-`G` on that window. Press `U` to clear the local override and go back to the
-global default.
+Most windows now inherit `master-stack`. If one window wants `grid`, hit `G`
+there. If you want to go back to the global default, hit `U`.
 
-Each layout page has a short tmux.conf example for wiring that layout into a
-real setup.
+See [Layouts](docs/layouts/) for the layout pages and global options.
+
+## [Layouts](docs/layouts/)
+
+- [`master-stack`](docs/layouts/master-stack.md#master-stack) — one master pane
+  plus equal-split stack
+- [`even-vertical`](docs/layouts/even-vertical.md#even-vertical) — equal-height
+  column
+- [`even-horizontal`](docs/layouts/even-horizontal.md#even-horizontal) —
+  equal-width row
+- [`grid`](docs/layouts/grid.md#grid) — tmux `tiled`
+- [`monocle`](docs/layouts/monocle.md#monocle) — keep the focused pane zoomed
 
 ## Acknowledgements
 
