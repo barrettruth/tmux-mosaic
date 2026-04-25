@@ -23,4 +23,6 @@ mosaic_register_hooks() {
     "run-shell -b '$exec relayout #{window_id}'"
   tmux set-hook -ga after-resize-pane \
     "run-shell -b '$exec _sync-state #{window_id}'"
+  tmux set-hook -ga after-select-pane \
+    "run-shell -b '$exec relayout #{window_id}'"
 }
