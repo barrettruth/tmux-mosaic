@@ -146,6 +146,11 @@ Faithful to Hyprland's master layout with `nmaster=1`, `new_status=slave`,
 matches `MasterAlgorithm::getNextTarget` — same-category neighbor first,
 falls back across the master/stack boundary at the ring edges.
 
+### even-vertical
+
+Equal-height panes in a column via tmux's native `even-vertical` layout. Set
+`@mosaic-algorithm` to `even-vertical` on a window to use it.
+
 ## FAQ
 
 **Q: Why doesn't `promote` toggle when I'm already master?**
