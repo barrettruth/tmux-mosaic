@@ -151,6 +151,12 @@ falls back across the master/stack boundary at the ring edges.
 Equal-height panes in a column via tmux's native `even-vertical` layout. Set
 `@mosaic-algorithm` to `even-vertical` on a window to use it.
 
+### monocle
+
+Fullscreen active pane via tmux's native zoom. Set `@mosaic-algorithm` to
+`monocle` on a window to keep the active pane zoomed as focus changes, panes
+split, and panes exit.
+
 ## FAQ
 
 **Q: Why doesn't `promote` toggle when I'm already master?**
