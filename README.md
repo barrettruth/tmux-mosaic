@@ -111,14 +111,21 @@ left, right, top, or bottom. If you kill the master, the stack-top becomes the
 new master on the next relayout, and if you drag-resize it, Mosaic syncs that
 size back into `@mosaic-mfact`.
 
-### Supported operations
+### Core actions
 
-| Op | Behavior |
+| Action | Behavior |
 | --- | --- |
-| `toggle` | Turn `master-stack` off on the current window |
-| `relayout` | Re-apply the current orientation and current `@mosaic-mfact` |
-| `promote` | Focused stack pane becomes master. On master: swap with stack-top |
-| `resize-master ±N` | Change `@mosaic-mfact` for the current window, clamped to 5–95 |
+| `toggle` | Turn `master-stack` off on the current window. |
+| `relayout` | Re-apply the current orientation and `@mosaic-mfact`. |
+| `promote` | Focused stack pane becomes master. On master, swap with stack-top. |
+| `resize-master ±N` | Change `@mosaic-mfact` for the current window, clamped to 5–95. |
+| focus up the stack (builtin) | Move to the previous pane in stack order. |
+| focus down the stack (builtin) | Move to the next pane in stack order. |
+| move pane up the stack (builtin) | Swap with the previous pane in stack order. |
+| move pane down the stack (builtin) | Swap with the next pane in stack order. |
+| split current pane (builtin) | Add a pane and rebalance master plus stack. |
+| kill current pane (builtin) | Remove a pane and rebalance; killing the master promotes the stack-top. |
+| drag-resize master (builtin) | Resize live, then sync the new size back into `@mosaic-mfact`. |
 
 ### Relevant options
 
@@ -151,12 +158,18 @@ This keeps panes in a single top-to-bottom column with equal heights. While it
 is active, splits and kills re-apply the same column layout. There is no
 primary pane, so `promote` and `resize-master` are not implemented.
 
-### Supported operations
+### Core actions
 
-| Op | Behavior |
+| Action | Behavior |
 | --- | --- |
-| `toggle` | Turn the current window layout off |
-| `relayout` | Re-apply `even-vertical` to the current window |
+| `toggle` | Turn `even-vertical` off on the current window. |
+| `relayout` | Re-apply the equal-height column. |
+| focus up (builtin) | Move to the pane above. |
+| focus down (builtin) | Move to the pane below. |
+| move pane up (builtin) | Swap with the previous pane in the column. |
+| move pane down (builtin) | Swap with the next pane in the column. |
+| split current pane (builtin) | Add a pane and rebalance the column. |
+| kill current pane (builtin) | Remove a pane and rebalance the column. |
 
 ### Example config
 
@@ -176,12 +189,18 @@ This keeps panes in a single left-to-right row with equal widths. While it is
 active, splits and kills re-apply the same row layout. There is no primary
 pane, so `promote` and `resize-master` are not implemented.
 
-### Supported operations
+### Core actions
 
-| Op | Behavior |
+| Action | Behavior |
 | --- | --- |
-| `toggle` | Turn the current window layout off |
-| `relayout` | Re-apply `even-horizontal` to the current window |
+| `toggle` | Turn `even-horizontal` off on the current window. |
+| `relayout` | Re-apply the equal-width row. |
+| focus left (builtin) | Move to the pane on the left. |
+| focus right (builtin) | Move to the pane on the right. |
+| move pane left (builtin) | Swap with the previous pane in the row. |
+| move pane right (builtin) | Swap with the next pane in the row. |
+| split current pane (builtin) | Add a pane and rebalance the row. |
+| kill current pane (builtin) | Remove a pane and rebalance the row. |
 
 ### Example config
 
@@ -201,12 +220,18 @@ This uses tmux's `tiled` layout and lets tmux choose the row and column shape
 from the current pane count. With four panes, it becomes a 2x2 grid. There is
 no primary pane, so `promote` and `resize-master` are not implemented.
 
-### Supported operations
+### Core actions
 
-| Op | Behavior |
+| Action | Behavior |
 | --- | --- |
-| `toggle` | Turn the current window layout off |
-| `relayout` | Re-apply tmux's `tiled` layout |
+| `toggle` | Turn `grid` off on the current window. |
+| `relayout` | Re-apply tmux's `tiled` layout. |
+| focus left (builtin) | Move to the pane on the left when one exists. |
+| focus right (builtin) | Move to the pane on the right when one exists. |
+| focus up (builtin) | Move to the pane above when one exists. |
+| focus down (builtin) | Move to the pane below when one exists. |
+| split current pane (builtin) | Add a pane and retile the grid. |
+| kill current pane (builtin) | Remove a pane and retile the grid. |
 
 ### Example config
 
@@ -228,12 +253,16 @@ re-zooms the new active pane because Mosaic relayouts on `after-select-pane`.
 There is no primary pane or master size, so `promote` and `resize-master` are
 not implemented.
 
-### Supported operations
+### Core actions
 
-| Op | Behavior |
+| Action | Behavior |
 | --- | --- |
-| `toggle` | Turn the current window layout off |
-| `relayout` | Re-zoom the active pane on the current window |
+| `toggle` | Turn `monocle` off on the current window. |
+| `relayout` | Re-zoom the active pane. |
+| focus previous pane (builtin) | Show the previous pane and keep it zoomed. |
+| focus next pane (builtin) | Show the next pane and keep it zoomed. |
+| split current pane (builtin) | Add a pane and keep the new pane zoomed. |
+| kill current pane (builtin) | Remove a pane; any remaining active pane stays zoomed. |
 
 ### Example config
 
