@@ -151,6 +151,11 @@ falls back across the master/stack boundary at the ring edges.
 Equal-height panes in a column via tmux's native `even-vertical` layout. Set
 `@mosaic-algorithm` to `even-vertical` on a window to use it.
 
+### even-horizontal
+
+Equal-width panes in a row via tmux's native `even-horizontal` layout. Set
+`@mosaic-algorithm` to `even-horizontal` on a window to use it.
+
 ## FAQ
 
 **Q: Why doesn't `promote` toggle when I'm already master?**
