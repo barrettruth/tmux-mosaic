@@ -113,6 +113,10 @@ left, right, top, or bottom. If you kill the master, the stack-top becomes the
 new master on the next relayout, and if you drag-resize it, Mosaic syncs that
 size back into `@mosaic-mfact`.
 
+### Preview
+
+![master-stack layout preview](https://github.com/user-attachments/assets/430293e3-c03e-493d-8ac8-a15b225404ad)
+
 ### Core actions
 
 | Command                        | Behavior                                                                  |
@@ -161,6 +165,10 @@ This keeps panes in a single top-to-bottom column with equal heights. While it
 is active, splits and kills re-apply the same column layout. There is no
 primary pane, so `promote` and `resize-master` are not implemented.
 
+### Preview
+
+![even-vertical layout preview](https://github.com/user-attachments/assets/0e7876d7-4bab-4ed7-a433-31c6b3071fd1)
+
 ### Core actions
 
 | Command                    | Behavior                                               |
@@ -193,6 +201,10 @@ This keeps panes in a single left-to-right row with equal widths. While it is
 active, splits and kills re-apply the same row layout. There is no primary
 pane, so `promote` and `resize-master` are not implemented.
 
+### Preview
+
+![even-horizontal layout preview](https://github.com/user-attachments/assets/e09cea84-6811-49b7-b875-ebc001f4d1b1)
+
 ### Core actions
 
 | Command                    | Behavior                                                |
@@ -224,6 +236,10 @@ bind U set-option -wqu @mosaic-algorithm
 This uses tmux's `tiled` layout and lets tmux choose the row and column shape
 from the current pane count. With four panes, it becomes a 2x2 grid. There is
 no primary pane, so `promote` and `resize-master` are not implemented.
+
+### Preview
+
+![grid layout preview](https://github.com/user-attachments/assets/40635fcd-f5e0-40f9-8695-517b853b661f)
 
 ### Core actions
 
@@ -258,6 +274,10 @@ Splitting the zoomed pane keeps the new pane zoomed, and changing focus
 re-zooms the new active pane because Mosaic relayouts on `after-select-pane`.
 There is no primary pane or master size, so `promote` and `resize-master` are
 not implemented.
+
+### Preview
+
+![monocle layout preview](https://github.com/user-attachments/assets/06bd3194-b2ec-4720-8dd8-f68804dc75a3)
 
 ### Core actions
 

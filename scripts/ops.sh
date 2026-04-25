@@ -66,7 +66,11 @@ dispatch_optional() {
 case "$cmd" in
 relayout) algo_relayout "$target_window" ;;
 toggle) algo_toggle ;;
-_sync-state) dispatch_optional algo_sync_state "$target_window" ;;
+_sync-state)
+  if declare -f algo_sync_state >/dev/null; then
+    algo_sync_state "$target_window"
+  fi
+  ;;
 promote) dispatch_optional algo_promote ;;
 resize-master) dispatch_optional algo_resize_master "$@" ;;
 '')
