@@ -66,5 +66,6 @@ bind -r . run '#{E:@mosaic-exec} resize-master +5'
 bind T run '#{E:@mosaic-exec} toggle'
 ```
 
-For focus movement, swapping, and zoom, keep using stock tmux commands. For the
-algorithm reference, see [docs/algorithms](docs/algorithms/README.md).
+For focus movement, swapping, and zoom, keep using stock tmux commands. For
+per-algorithm behavior, supported ops, and options, see
+[docs/algorithms](docs/algorithms/README.md).
