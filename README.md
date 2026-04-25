@@ -2,7 +2,7 @@
 
 **Pane tiling layouts for tmux**
 
-A tmux plugin that adds master-stack, grid, monocle, and other layouts with global defaults and per-window overrides.
+A tmux plugin that adds tiling layouts (master-stack, grid, monocle, etc.) with global and window-scoped options.
 
 ## Dependencies
 
@@ -47,6 +47,7 @@ git clone git@github.com:barrettruth/tmux-mosaic \
 ```tmux
 run-shell ${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/tmux-mosaic/mosaic.tmux
 ```
+
 </details>
 
 <details>
@@ -65,6 +66,7 @@ inputs.tmux-mosaic.url = "github:barrettruth/tmux-mosaic";
 ```tmux
 run-shell ${tmux-mosaic.packages.${system}.default}/share/tmux-plugins/mosaic/mosaic.tmux
 ```
+
 </details>
 
 ## Quick Start
@@ -113,27 +115,27 @@ size back into `@mosaic-mfact`.
 
 ### Core actions
 
-| Command | Behavior |
-| --- | --- |
-| `toggle` | Turn `master-stack` off on the current window. |
-| `relayout` | Re-apply the current orientation and `@mosaic-mfact`. |
-| `promote` | Focused stack pane becomes master. On master, swap with stack-top. |
-| `resize-master ±N` | Change `@mosaic-mfact` for the current window, clamped to 5–95. |
-| `select-pane -t :.-` (builtin) | Focus the previous pane in stack order. |
-| `select-pane -t :.+` (builtin) | Focus the next pane in stack order. |
-| `swap-pane -U` (builtin) | Move the current pane up the stack. |
-| `swap-pane -D` (builtin) | Move the current pane down the stack. |
-| `split-window` (builtin) | Add a pane and rebalance master plus stack. |
-| `kill-pane` (builtin) | Remove a pane and rebalance; killing the master promotes the stack-top. |
-| `resize-pane` (builtin) | Resize the master live, then sync the new size back into `@mosaic-mfact`. |
+| Command                        | Behavior                                                                  |
+| ------------------------------ | ------------------------------------------------------------------------- |
+| `toggle`                       | Turn `master-stack` off on the current window.                            |
+| `relayout`                     | Re-apply the current orientation and `@mosaic-mfact`.                     |
+| `promote`                      | Focused stack pane becomes master. On master, swap with stack-top.        |
+| `resize-master ±N`             | Change `@mosaic-mfact` for the current window, clamped to 5–95.           |
+| `select-pane -t :.-` (builtin) | Focus the previous pane in stack order.                                   |
+| `select-pane -t :.+` (builtin) | Focus the next pane in stack order.                                       |
+| `swap-pane -U` (builtin)       | Move the current pane up the stack.                                       |
+| `swap-pane -D` (builtin)       | Move the current pane down the stack.                                     |
+| `split-window` (builtin)       | Add a pane and rebalance master plus stack.                               |
+| `kill-pane` (builtin)          | Remove a pane and rebalance; killing the master promotes the stack-top.   |
+| `resize-pane` (builtin)        | Resize the master live, then sync the new size back into `@mosaic-mfact`. |
 
 ### Relevant options
 
-| Option | Scope | Default | Effect |
-| --- | --- | --- | --- |
-| `@mosaic-orientation` | window→global | `left` | Chooses `left`, `right`, `top`, or `bottom` |
-| `@mosaic-mfact` | window→global | `50` | Stores the master size as a percent |
-| `@mosaic-step` | global | `5` | Used by `resize-master` when you call it without an explicit N |
+| Option                | Scope         | Default | Effect                                                         |
+| --------------------- | ------------- | ------- | -------------------------------------------------------------- |
+| `@mosaic-orientation` | window→global | `left`  | Chooses `left`, `right`, `top`, or `bottom`                    |
+| `@mosaic-mfact`       | window→global | `50`    | Stores the master size as a percent                            |
+| `@mosaic-step`        | global        | `5`     | Used by `resize-master` when you call it without an explicit N |
 
 ### Example config
 
@@ -147,6 +149,7 @@ bind -r . run '#{E:@mosaic-exec} resize-master +5'
 bind T run '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-algorithm
 ```
+
 </details>
 
 <details>
@@ -160,16 +163,16 @@ primary pane, so `promote` and `resize-master` are not implemented.
 
 ### Core actions
 
-| Command | Behavior |
-| --- | --- |
-| `toggle` | Turn `even-vertical` off on the current window. |
-| `relayout` | Re-apply the equal-height column. |
-| `select-pane -U` (builtin) | Focus the pane above. |
-| `select-pane -D` (builtin) | Focus the pane below. |
-| `swap-pane -U` (builtin) | Move the current pane toward the top of the column. |
-| `swap-pane -D` (builtin) | Move the current pane toward the bottom of the column. |
-| `split-window` (builtin) | Add a pane and rebalance the column. |
-| `kill-pane` (builtin) | Remove a pane and rebalance the column. |
+| Command                    | Behavior                                               |
+| -------------------------- | ------------------------------------------------------ |
+| `toggle`                   | Turn `even-vertical` off on the current window.        |
+| `relayout`                 | Re-apply the equal-height column.                      |
+| `select-pane -U` (builtin) | Focus the pane above.                                  |
+| `select-pane -D` (builtin) | Focus the pane below.                                  |
+| `swap-pane -U` (builtin)   | Move the current pane toward the top of the column.    |
+| `swap-pane -D` (builtin)   | Move the current pane toward the bottom of the column. |
+| `split-window` (builtin)   | Add a pane and rebalance the column.                   |
+| `kill-pane` (builtin)      | Remove a pane and rebalance the column.                |
 
 ### Example config
 
@@ -178,6 +181,7 @@ bind V set-option -wq @mosaic-algorithm even-vertical
 bind T run '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-algorithm
 ```
+
 </details>
 
 <details>
@@ -191,16 +195,16 @@ pane, so `promote` and `resize-master` are not implemented.
 
 ### Core actions
 
-| Command | Behavior |
-| --- | --- |
-| `toggle` | Turn `even-horizontal` off on the current window. |
-| `relayout` | Re-apply the equal-width row. |
-| `select-pane -L` (builtin) | Focus the pane on the left. |
-| `select-pane -R` (builtin) | Focus the pane on the right. |
-| `swap-pane -U` (builtin) | Move the current pane toward the left side of the row. |
-| `swap-pane -D` (builtin) | Move the current pane toward the right side of the row. |
-| `split-window` (builtin) | Add a pane and rebalance the row. |
-| `kill-pane` (builtin) | Remove a pane and rebalance the row. |
+| Command                    | Behavior                                                |
+| -------------------------- | ------------------------------------------------------- |
+| `toggle`                   | Turn `even-horizontal` off on the current window.       |
+| `relayout`                 | Re-apply the equal-width row.                           |
+| `select-pane -L` (builtin) | Focus the pane on the left.                             |
+| `select-pane -R` (builtin) | Focus the pane on the right.                            |
+| `swap-pane -U` (builtin)   | Move the current pane toward the left side of the row.  |
+| `swap-pane -D` (builtin)   | Move the current pane toward the right side of the row. |
+| `split-window` (builtin)   | Add a pane and rebalance the row.                       |
+| `kill-pane` (builtin)      | Remove a pane and rebalance the row.                    |
 
 ### Example config
 
@@ -209,6 +213,7 @@ bind H set-option -wq @mosaic-algorithm even-horizontal
 bind T run '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-algorithm
 ```
+
 </details>
 
 <details>
@@ -222,16 +227,16 @@ no primary pane, so `promote` and `resize-master` are not implemented.
 
 ### Core actions
 
-| Command | Behavior |
-| --- | --- |
-| `toggle` | Turn `grid` off on the current window. |
-| `relayout` | Re-apply tmux's `tiled` layout. |
-| `select-pane -L` (builtin) | Focus the pane on the left when one exists. |
+| Command                    | Behavior                                     |
+| -------------------------- | -------------------------------------------- |
+| `toggle`                   | Turn `grid` off on the current window.       |
+| `relayout`                 | Re-apply tmux's `tiled` layout.              |
+| `select-pane -L` (builtin) | Focus the pane on the left when one exists.  |
 | `select-pane -R` (builtin) | Focus the pane on the right when one exists. |
-| `select-pane -U` (builtin) | Focus the pane above when one exists. |
-| `select-pane -D` (builtin) | Focus the pane below when one exists. |
-| `split-window` (builtin) | Add a pane and retile the grid. |
-| `kill-pane` (builtin) | Remove a pane and retile the grid. |
+| `select-pane -U` (builtin) | Focus the pane above when one exists.        |
+| `select-pane -D` (builtin) | Focus the pane below when one exists.        |
+| `split-window` (builtin)   | Add a pane and retile the grid.              |
+| `kill-pane` (builtin)      | Remove a pane and retile the grid.           |
 
 ### Example config
 
@@ -240,6 +245,7 @@ bind G set-option -wq @mosaic-algorithm grid
 bind T run '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-algorithm
 ```
+
 </details>
 
 <details>
@@ -255,14 +261,14 @@ not implemented.
 
 ### Core actions
 
-| Command | Behavior |
-| --- | --- |
-| `toggle` | Turn `monocle` off on the current window. |
-| `relayout` | Re-zoom the active pane. |
-| `select-pane -t :.-` (builtin) | Show the previous pane and keep it zoomed. |
-| `select-pane -t :.+` (builtin) | Show the next pane and keep it zoomed. |
-| `split-window` (builtin) | Add a pane and keep the new pane zoomed. |
-| `kill-pane` (builtin) | Remove a pane; any remaining active pane stays zoomed. |
+| Command                        | Behavior                                               |
+| ------------------------------ | ------------------------------------------------------ |
+| `toggle`                       | Turn `monocle` off on the current window.              |
+| `relayout`                     | Re-zoom the active pane.                               |
+| `select-pane -t :.-` (builtin) | Show the previous pane and keep it zoomed.             |
+| `select-pane -t :.+` (builtin) | Show the next pane and keep it zoomed.                 |
+| `split-window` (builtin)       | Add a pane and keep the new pane zoomed.               |
+| `kill-pane` (builtin)          | Remove a pane; any remaining active pane stays zoomed. |
 
 ### Example config
 
@@ -273,6 +279,7 @@ bind U set-option -wqu @mosaic-algorithm
 bind n select-pane -t :.+
 bind p select-pane -t :.-
 ```
+
 </details>
 
 ## Acknowledgements
