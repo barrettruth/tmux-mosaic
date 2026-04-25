@@ -19,7 +19,6 @@ no key grabs.
 ## Features
 
 - Hyprland master-layout semantics (verified against `MasterAlgorithm.cpp`)
-- Ring-traversal `swap-next` / `swap-prev` (master ↔ stack-top wraps included)
 - Per-window opt-in — disabled windows are entirely untouched
 - Strategy pattern under `scripts/algorithms/` for adding new layouts
 - Native tmux primitives only — no hand-rolled layout strings, no CRC-16
@@ -63,34 +62,49 @@ Mosaic is **opt-in per window**:
 set-option -wq @mosaic-enabled 1
 ```
 
-Bind whichever ops you want. The plugin exports `@mosaic-exec` so paths
-resolve cleanly across nix-store / TPM / manual installs:
+Stock tmux already covers the trivial ops (focus, swap, zoom). Mosaic
+adds only the operations tmux can't express on its own. The plugin
+exports `@mosaic-exec` so paths resolve cleanly across nix-store / TPM
+/ manual installs:
 
 ```tmux
-bind a run '#{E:@mosaic-exec} focus-next'
-bind f run '#{E:@mosaic-exec} focus-prev'
-bind d run '#{E:@mosaic-exec} swap-next'
-bind u run '#{E:@mosaic-exec} swap-prev'
+# Stock tmux primitives — work the way Hyprland's master layout does
+# because mosaic keeps the layout as main-vertical
+bind a select-pane -t :.+
+bind f select-pane -t :.-
+bind M select-pane -t :.1
+bind d swap-pane -D
+bind u swap-pane -U
+bind z resize-pane -Z
+
+# mosaic value-adds
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r , run '#{E:@mosaic-exec} resize-master -5'
 bind -r . run '#{E:@mosaic-exec} resize-master +5'
-bind z run '#{E:@mosaic-exec} toggle-zoom'
 bind T run '#{E:@mosaic-exec} toggle'
-bind M run '#{E:@mosaic-exec} focus-master'
 ```
 
 ## Operations
 
+mosaic exposes four operations. Everything else is stock tmux.
+
 | Op | Behavior |
 |---|---|
-| `focus-next` / `focus-prev` | Cycle focus through panes (ring, wraps) |
-| `focus-master` | Focus the master pane |
-| `swap-next` / `swap-prev` | Move focused pane through the layout ring (Hyprland `swapnext` / `swapprev`) |
-| `promote` | Move focused stack pane to master. On master: swap with stack-top |
-| `resize-master ±N` | Adjust master width by N percent (clamped 5–95) |
-| `toggle-zoom` | Tmux native zoom (monocle equivalent) |
 | `toggle` | Enable/disable tiling on the current window |
-| `relayout` | Force re-apply the current algorithm |
+| `promote` | Move focused stack pane to master. On master: swap with stack-top (Hyprland's `swapwithmaster auto`) |
+| `resize-master ±N` | Adjust master width by N percent (clamped 5–95) |
+| `relayout` | Force re-apply the current algorithm (rarely needed — hooks fire on splits, kills, exits, and resizes) |
+
+For the non-master-stack-specific ops, use stock tmux directly:
+
+| Want | Tmux command |
+|---|---|
+| Focus next/prev pane in the ring | `select-pane -t :.+` / `:.-` |
+| Focus the master | `select-pane -t :.1` (or `:.0` if `pane-base-index` is 0) |
+| Swap focused pane through the ring (Hyprland `swapnext` / `swapprev`) | `swap-pane -D` / `-U` |
+| Zoom focused pane (monocle equivalent) | `resize-pane -Z` |
+
+These work because mosaic keeps the layout as `main-vertical`, which positions panes by index. Tmux's index-order ops then traverse the master/stack ring exactly as Hyprland's master layout does.
 
 ## Options
 
@@ -110,15 +124,11 @@ Each algorithm is one file under `scripts/algorithms/<name>.sh` exposing a
 fixed contract:
 
 ```
-algo_relayout <window-id>          # required
-algo_promote                       # optional
-algo_resize_master <delta>         # optional
-algo_sync_state <window-id>        # optional — sync mosaic state from current tmux state
-algo_toggle                        # optional
-algo_focus_next / algo_focus_prev  # optional (default: select-pane -t :.+/-)
-algo_focus_master                  # optional (default: focus pane at pane-base-index)
-algo_swap_next / algo_swap_prev    # optional (default: swap-pane -D/-U)
-algo_toggle_zoom                   # optional (default: resize-pane -Z)
+algo_relayout <window-id>      # required — apply the layout
+algo_toggle                    # required — enable/disable on this window
+algo_promote                   # optional — bring focused pane to "primary" slot
+algo_resize_master <delta>     # optional — adjust the algorithm's primary dimension
+algo_sync_state <window-id>    # optional — pull mosaic state from current tmux state
 ```
 
 The dispatcher (`scripts/ops.sh`) sources the file selected by

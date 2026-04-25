@@ -55,34 +55,6 @@ teardown() {
     [ "${diff#-}" -le 1 ]
 }
 
-@test "swap-next ring: master cycles through stack and back" {
-    for _ in 1 2 3; do mosaic_split; done
-    mosaic_t select-pane -t t:1.1
-    pid=$(mosaic_t display-message -p -t t:1 '#{pane_id}')
-
-    for expected_idx in 2 3 4 1; do
-        mosaic_op swap-next
-        actual_idx=$(mosaic_pane_index)
-        actual_pid=$(mosaic_t display-message -p -t t:1 '#{pane_id}')
-        [ "$actual_pid" = "$pid" ]
-        [ "$actual_idx" = "$expected_idx" ]
-    done
-}
-
-@test "swap-prev ring: master jumps to last slave, walks back" {
-    for _ in 1 2 3; do mosaic_split; done
-    mosaic_t select-pane -t t:1.1
-    pid=$(mosaic_t display-message -p -t t:1 '#{pane_id}')
-
-    for expected_idx in 4 3 2 1; do
-        mosaic_op swap-prev
-        actual_idx=$(mosaic_pane_index)
-        actual_pid=$(mosaic_t display-message -p -t t:1 '#{pane_id}')
-        [ "$actual_pid" = "$pid" ]
-        [ "$actual_idx" = "$expected_idx" ]
-    done
-}
-
 @test "promote from stack: focused pane becomes master" {
     for _ in 1 2 3; do mosaic_split; done
     mosaic_t select-pane -t t:1.3
@@ -102,29 +74,6 @@ teardown() {
     mosaic_op promote
     [ "$(mosaic_pane_id_at t:1.1)" = "$stack_top_pid" ]
     [ "$(mosaic_pane_id_at t:1.2)" = "$master_pid" ]
-}
-
-@test "focus-next/prev cycle through ring" {
-    for _ in 1 2 3; do mosaic_split; done
-    mosaic_t select-pane -t t:1.1
-    [ "$(mosaic_pane_index)" = "1" ]
-
-    for expected in 2 3 4 1; do
-        mosaic_op focus-next
-        [ "$(mosaic_pane_index)" = "$expected" ]
-    done
-
-    for expected in 4 3 2 1; do
-        mosaic_op focus-prev
-        [ "$(mosaic_pane_index)" = "$expected" ]
-    done
-}
-
-@test "focus-master jumps to pane 1" {
-    for _ in 1 2 3; do mosaic_split; done
-    mosaic_t select-pane -t t:1.4
-    mosaic_op focus-master
-    [ "$(mosaic_pane_index)" = "1" ]
 }
 
 @test "resize-master adjusts mfact (window-scoped) and clamps" {
@@ -182,15 +131,6 @@ teardown() {
     [ "$(mosaic_pane_id_at t:1.1)" = "$stack_top" ]
     layout=$(mosaic_layout)
     [[ "$layout" == *"{"* ]]
-}
-
-@test "toggle-zoom toggles window_zoomed_flag" {
-    mosaic_split
-    [ "$(mosaic_t display-message -p -t t:1 '#{window_zoomed_flag}')" = "0" ]
-    mosaic_op toggle-zoom
-    [ "$(mosaic_t display-message -p -t t:1 '#{window_zoomed_flag}')" = "1" ]
-    mosaic_op toggle-zoom
-    [ "$(mosaic_t display-message -p -t t:1 '#{window_zoomed_flag}')" = "0" ]
 }
 
 @test "disabled window: splits do NOT retile" {

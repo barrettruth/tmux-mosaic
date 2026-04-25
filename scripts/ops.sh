@@ -49,22 +49,22 @@ if ! load_algorithm "$algo"; then
     exit 1
 fi
 
+dispatch_optional() {
+    local fn="$1"
+    shift
+    if declare -f "$fn" >/dev/null; then
+        "$fn" "$@"
+    else
+        tmux display-message "mosaic: $algo does not implement ${fn#algo_}"
+    fi
+}
+
 case "$cmd" in
 relayout) algo_relayout "$target_window" ;;
-_sync-state)
-    if declare -f algo_sync_state >/dev/null; then
-        algo_sync_state "$target_window"
-    fi
-    ;;
 toggle) algo_toggle ;;
-focus-next) algo_focus_next ;;
-focus-prev) algo_focus_prev ;;
-focus-master) algo_focus_master ;;
-swap-next) algo_swap_next ;;
-swap-prev) algo_swap_prev ;;
-promote) algo_promote ;;
-resize-master) algo_resize_master "$@" ;;
-toggle-zoom) algo_toggle_zoom ;;
+_sync-state) dispatch_optional algo_sync_state "$target_window" ;;
+promote) dispatch_optional algo_promote ;;
+resize-master) dispatch_optional algo_resize_master "$@" ;;
 '')
     echo "usage: $0 <op> [args]" >&2
     exit 1

@@ -57,20 +57,6 @@ algo_toggle() {
     fi
 }
 
-algo_focus_next() { tmux select-pane -t :.+; }
-algo_focus_prev() { tmux select-pane -t :.-; }
-algo_focus_master() { tmux select-pane -t ":.$(algo_pane_base)"; }
-
-algo_swap_next() {
-    [[ "$(algo_pane_count)" -le 1 ]] && return 0
-    tmux swap-pane -D
-}
-
-algo_swap_prev() {
-    [[ "$(algo_pane_count)" -le 1 ]] && return 0
-    tmux swap-pane -U
-}
-
 algo_promote() {
     local idx n pbase
     idx=$(algo_pane_index)
@@ -101,8 +87,6 @@ algo_resize_master() {
     tmux set-option -wq -t "$win" "@mosaic-mfact" "$new"
     algo_relayout "$win"
 }
-
-algo_toggle_zoom() { tmux resize-pane -Z; }
 
 algo_sync_state() {
     local win="$1"
