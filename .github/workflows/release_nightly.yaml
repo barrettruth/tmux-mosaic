@@ -2,8 +2,9 @@ name: Nightly Release
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '17 5 * * *'
+  workflow_run:
+    workflows: ["quality"]
+    types: [completed]
 
 permissions:
   actions: read
@@ -11,18 +12,23 @@ permissions:
 
 concurrency:
   group: nightly-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   nightly_release:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Resolve latest green main commit
+      - name: Resolve target commit
         id: run
         run: |
-          sha="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow quality --branch main --event push --json headSha,conclusion,status --limit 20 | jq -r 'map(select(.status == "completed" and .conclusion == "success")) | .[0].headSha // empty')"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            sha="${{ github.event.workflow_run.head_sha }}"
+          else
+            sha="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow quality --branch main --event push --json headSha,conclusion,status --limit 20 | jq -r 'map(select(.status == "completed" and .conclusion == "success")) | .[0].headSha // empty')"
+          fi
           [ -n "$sha" ]
           echo "head_sha=$sha" >>"$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
@@ -40,7 +46,7 @@ jobs:
           fi
           short_sha="${{ steps.run.outputs.head_sha }}"
           short_sha="${short_sha:0:7}"
-          title="nightly ($version, $(date -u +%Y-%m-%d), $short_sha)"
+          title="Nightly $version ($short_sha)"
           previous_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1 || true)"
           current="$(git ls-remote --tags origin 'refs/tags/nightly^{}' | awk '{print $1}')"
           if [ -z "$current" ]; then
