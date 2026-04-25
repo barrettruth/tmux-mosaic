@@ -53,9 +53,6 @@ set-option -wqu @mosaic-algorithm
 Bindings shown here are examples only. Mosaic does not install any bindings by
 default.
 
-For `master-stack` behavior, supported operations, and options, see
-[`docs/layouts/master-stack.md`](docs/layouts/master-stack.md).
-
 For other layouts, layout-specific behavior, and the per-layout support matrix,
 see [Layouts](docs/layouts/).
 
