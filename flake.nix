@@ -37,7 +37,7 @@
                 ".github"
                 ".gitignore"
                 ".editorconfig"
-                ".prettierrc"
+                "biome.json"
                 "flake.nix"
                 "flake.lock"
                 "justfile"
@@ -53,10 +53,10 @@
         pkgs:
         let
           common = [
+            pkgs.biome
             pkgs.bats
             pkgs.shellcheck
             pkgs.shfmt
-            pkgs.prettier
             pkgs.tmux
             pkgs.just
           ];
