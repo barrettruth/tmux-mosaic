@@ -17,7 +17,7 @@ lint: shellcheck
     @:
 
 test:
-    bats tests/integration
+    bats tests/integration/*.bats
 
 build:
     nix build .#default
