@@ -2,6 +2,8 @@
 
 **Pane tiling layouts for tmux**
 
+A tmux plugin that adds master-stack, grid, monocle, and other layouts with global defaults and per-window overrides.
+
 ## Dependencies
 
 - [tmux](https://github.com/tmux/tmux) 3.2+
@@ -36,7 +38,7 @@ set -g @plugin 'barrettruth/tmux-mosaic'
 1. Clone the repo somewhere tmux can reach it:
 
 ```console
-$ git clone git@github.com:barrettruth/tmux-mosaic \
+git clone git@github.com:barrettruth/tmux-mosaic \
     ${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/tmux-mosaic
 ```
 
@@ -99,21 +101,17 @@ bind U     set-option -wqu @mosaic-algorithm
 Layouts are the pane arrangements Mosaic can apply. The following are provided:
 
 <details>
-<summary><code>master-stack</code></summary>
+<summary><code>master-stack</code> — one primary pane plus equal-split stack</summary>
 
-### master-stack
+### Behavior
 
-`master-stack` keeps one primary pane and an equal-split stack using tmux's
-`main-*` layouts.
+This uses tmux's `main-*` layouts and keeps the master as the first pane in
+tmux's pane order. `@mosaic-orientation` chooses whether the master sits on the
+left, right, top, or bottom. If you kill the master, the stack-top becomes the
+new master on the next relayout, and if you drag-resize it, Mosaic syncs that
+size back into `@mosaic-mfact`.
 
-#### Behavior
-
-- `left`, `right`, `top`, and `bottom` map to tmux's `main-*` layouts
-- the master is the first pane in tmux's pane order
-- killing the master promotes the stack-top on the next relayout
-- drag-resizing the master updates `@mosaic-mfact` for the next relayout
-
-#### Supported operations
+### Supported operations
 
 | Op | Behavior |
 | --- | --- |
@@ -122,7 +120,7 @@ Layouts are the pane arrangements Mosaic can apply. The following are provided:
 | `promote` | Focused stack pane becomes master. On master: swap with stack-top |
 | `resize-master ±N` | Change `@mosaic-mfact` for the current window, clamped to 5–95 |
 
-#### Relevant options
+### Relevant options
 
 | Option | Scope | Default | Effect |
 | --- | --- | --- | --- |
@@ -130,7 +128,7 @@ Layouts are the pane arrangements Mosaic can apply. The following are provided:
 | `@mosaic-mfact` | window→global | `50` | Stores the master size as a percent |
 | `@mosaic-step` | global | `5` | Used by `resize-master` when you call it without an explicit N |
 
-#### Example config
+### Example config
 
 ```tmux
 set-option -gwq @mosaic-algorithm master-stack
@@ -145,30 +143,22 @@ bind U set-option -wqu @mosaic-algorithm
 </details>
 
 <details>
-<summary><code>even-vertical</code></summary>
+<summary><code>even-vertical</code> — equal-height panes in one column</summary>
 
-### even-vertical
+### Behavior
 
-`even-vertical` keeps panes in one column with equal heights using tmux's native
-`even-vertical` layout.
+This keeps panes in a single top-to-bottom column with equal heights. While it
+is active, splits and kills re-apply the same column layout. There is no
+primary pane, so `promote` and `resize-master` are not implemented.
 
-#### Behavior
+### Supported operations
 
-- panes are stacked top to bottom in a single column
-- splits and kills re-apply the column layout while `even-vertical` is active
-  on the window
-- there is no primary pane, so `promote` and `resize-master` are not implemented
+| Op | Behavior |
+| --- | --- |
+| `toggle` | Turn the current window layout off |
+| `relayout` | Re-apply `even-vertical` to the current window |
 
-#### Supported operations
-
-| Op | Support | Behavior |
-| --- | --- | --- |
-| `toggle` | yes | Turn the current window layout off |
-| `relayout` | yes | Re-apply `even-vertical` to the current window |
-| `promote` | no | Surfaces a tmux message |
-| `resize-master ±N` | no | Surfaces a tmux message |
-
-#### Example config
+### Example config
 
 ```tmux
 bind V set-option -wq @mosaic-algorithm even-vertical
@@ -178,30 +168,22 @@ bind U set-option -wqu @mosaic-algorithm
 </details>
 
 <details>
-<summary><code>even-horizontal</code></summary>
+<summary><code>even-horizontal</code> — equal-width panes in one row</summary>
 
-### even-horizontal
+### Behavior
 
-`even-horizontal` keeps panes in one row with equal widths using tmux's native
-`even-horizontal` layout.
+This keeps panes in a single left-to-right row with equal widths. While it is
+active, splits and kills re-apply the same row layout. There is no primary
+pane, so `promote` and `resize-master` are not implemented.
 
-#### Behavior
+### Supported operations
 
-- panes are arranged left to right in a single row
-- splits and kills re-apply the row layout while `even-horizontal` is active on
-  the window
-- there is no primary pane, so `promote` and `resize-master` are not implemented
+| Op | Behavior |
+| --- | --- |
+| `toggle` | Turn the current window layout off |
+| `relayout` | Re-apply `even-horizontal` to the current window |
 
-#### Supported operations
-
-| Op | Support | Behavior |
-| --- | --- | --- |
-| `toggle` | yes | Turn the current window layout off |
-| `relayout` | yes | Re-apply `even-horizontal` to the current window |
-| `promote` | no | Surfaces a tmux message |
-| `resize-master ±N` | no | Surfaces a tmux message |
-
-#### Example config
+### Example config
 
 ```tmux
 bind H set-option -wq @mosaic-algorithm even-horizontal
@@ -211,28 +193,22 @@ bind U set-option -wqu @mosaic-algorithm
 </details>
 
 <details>
-<summary><code>grid</code></summary>
+<summary><code>grid</code> — equal-size tiled grid</summary>
 
-### grid
+### Behavior
 
-`grid` uses tmux's native `tiled` layout for an equal-size grid.
+This uses tmux's `tiled` layout and lets tmux choose the row and column shape
+from the current pane count. With four panes, it becomes a 2x2 grid. There is
+no primary pane, so `promote` and `resize-master` are not implemented.
 
-#### Behavior
+### Supported operations
 
-- tmux chooses the row and column shape from the current pane count
-- with four panes, the layout becomes a 2x2 grid
-- there is no primary pane, so `promote` and `resize-master` are not implemented
+| Op | Behavior |
+| --- | --- |
+| `toggle` | Turn the current window layout off |
+| `relayout` | Re-apply tmux's `tiled` layout |
 
-#### Supported operations
-
-| Op | Support | Behavior |
-| --- | --- | --- |
-| `toggle` | yes | Turn the current window layout off |
-| `relayout` | yes | Re-apply tmux's `tiled` layout |
-| `promote` | no | Surfaces a tmux message |
-| `resize-master ±N` | no | Surfaces a tmux message |
-
-#### Example config
+### Example config
 
 ```tmux
 bind G set-option -wq @mosaic-algorithm grid
@@ -242,32 +218,24 @@ bind U set-option -wqu @mosaic-algorithm
 </details>
 
 <details>
-<summary><code>monocle</code></summary>
+<summary><code>monocle</code> — keep the focused pane zoomed</summary>
 
-### monocle
+### Behavior
 
-`monocle` keeps the focused pane zoomed using tmux's native zoom support.
+This keeps the focused pane zoomed on windows with more than one pane.
+Splitting the zoomed pane keeps the new pane zoomed, and changing focus
+re-zooms the new active pane because Mosaic relayouts on `after-select-pane`.
+There is no primary pane or master size, so `promote` and `resize-master` are
+not implemented.
 
-#### Behavior
+### Supported operations
 
-- when selected on a window with more than one pane, the focused pane stays
-  zoomed
-- splitting the zoomed pane keeps the new pane zoomed
-- selecting another pane re-zooms the new active pane because mosaic relayouts
-  on `after-select-pane`
-- there is no primary pane or master size, so `promote` and `resize-master` are
-  not implemented
+| Op | Behavior |
+| --- | --- |
+| `toggle` | Turn the current window layout off |
+| `relayout` | Re-zoom the active pane on the current window |
 
-#### Supported operations
-
-| Op | Support | Behavior |
-| --- | --- | --- |
-| `toggle` | yes | Turn the current window layout off |
-| `relayout` | yes | Re-zoom the active pane on the current window |
-| `promote` | no | Surfaces a tmux message |
-| `resize-master ±N` | no | Surfaces a tmux message |
-
-#### Example config
+### Example config
 
 ```tmux
 bind Z set-option -wq @mosaic-algorithm monocle
