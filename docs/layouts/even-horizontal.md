@@ -8,7 +8,7 @@
 - panes are arranged left to right in a single row
 - widths stay equal-split, with at most a one-cell remainder from tmux's
   geometry
-- splits and kills re-apply the row layout while `@mosaic-algorithm` is set on
+- splits and kills re-apply the row layout while `even-horizontal` is active on
   the window
 - there is no primary pane, so `promote` and `resize-master` are not implemented
 
@@ -24,7 +24,9 @@
 ## Relevant options
 
 No layout-specific options. Set `@mosaic-algorithm` to `even-horizontal` to
-select it. Unset `@mosaic-algorithm` to disable mosaic on that window.
+select it globally or per-window. Set `@mosaic-algorithm` to `off` on a window
+to disable mosaic there. Unset the window-local value to fall back to the
+global setting again.
 `@mosaic-orientation`, `@mosaic-mfact`, and `@mosaic-step` are ignored.
 
 ## Example use

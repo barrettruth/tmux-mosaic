@@ -24,12 +24,31 @@ TPM, manual, and nix setup live in [INSTALLATION.md](INSTALLATION.md).
 
 ## Quick Start
 
-tmux-mosaic does _not_ bundle keymaps. You must set them yourself.
+tmux-mosaic does _not_ bundle keymaps. You choose layouts with
+`@mosaic-algorithm`, and you bind operations yourself with `@mosaic-exec`.
 
-For example, to use the `master-stack` layout on the current window:
+To use `master-stack` on every window by default:
 
 ```tmux
-set-option -wq @mosaic-algorithm master-stack
+set-option -gwq @mosaic-algorithm master-stack
+```
+
+To override just the current window:
+
+```tmux
+set-option -wq @mosaic-algorithm grid
+```
+
+To disable mosaic on just the current window:
+
+```tmux
+set-option -wq @mosaic-algorithm off
+```
+
+Unset the window-local value to fall back to the global setting again:
+
+```tmux
+set-option -wqu @mosaic-algorithm
 ```
 
 Then, add your custom keybinds with `@mosaic-exec`:
@@ -39,12 +58,6 @@ bind Enter run '#{E:@mosaic-exec} promote'
 bind -r ,  run '#{E:@mosaic-exec} resize-master -5'
 bind -r .  run '#{E:@mosaic-exec} resize-master +5'
 bind T     run '#{E:@mosaic-exec} toggle'
-```
-
-Disable the layout as follows:
-
-```tmux
-set-option -wqu @mosaic-algorithm
 ```
 
 ## Acknowledgements

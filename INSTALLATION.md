@@ -51,19 +51,28 @@ Reload tmux if it is already running:
 tmux source-file ~/.tmux.conf
 ```
 
-Select a layout on the current window:
+Mosaic installs no default keybindings. You choose layouts with
+`@mosaic-algorithm`, and you bind operations yourself with `@mosaic-exec`.
+
+To use `master-stack` on every window by default:
 
 ```tmux
-set-option -wq @mosaic-algorithm master-stack
+set-option -gwq @mosaic-algorithm master-stack
 ```
 
-Switch layouts by setting a different value:
+To override just the current window:
 
 ```tmux
 set-option -wq @mosaic-algorithm grid
 ```
 
-Unset it to turn mosaic off on that window:
+To disable mosaic on just the current window:
+
+```tmux
+set-option -wq @mosaic-algorithm off
+```
+
+Unset the window-local value to fall back to the global setting again:
 
 ```tmux
 set-option -wqu @mosaic-algorithm
@@ -74,10 +83,12 @@ Optional example bindings:
 ```tmux
 bind M set-option -wq @mosaic-algorithm master-stack
 bind G set-option -wq @mosaic-algorithm grid
-bind T set-option -wqu @mosaic-algorithm
+bind O set-option -wq @mosaic-algorithm off
+bind U set-option -wqu @mosaic-algorithm
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r , run '#{E:@mosaic-exec} resize-master -5'
 bind -r . run '#{E:@mosaic-exec} resize-master +5'
+bind T run '#{E:@mosaic-exec} toggle'
 ```
 
 For focus movement, swapping, and zoom, keep using stock tmux commands. For

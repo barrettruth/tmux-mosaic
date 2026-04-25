@@ -22,7 +22,8 @@
 ## Relevant options
 
 No layout-specific options. Set `@mosaic-algorithm` to `grid` to select it.
-Unset `@mosaic-algorithm` to disable mosaic on that window.
+Set `@mosaic-algorithm` to `off` on a window to disable mosaic there. Unset the
+window-local value to fall back to the global setting again.
 `@mosaic-orientation`, `@mosaic-mfact`, and `@mosaic-step` are ignored.
 
 ## Example use

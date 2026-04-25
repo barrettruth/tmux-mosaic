@@ -13,6 +13,7 @@ teardown() {
 
 @test "grid: 4 panes use tiled layout" {
   for _ in 1 2 3; do mosaic_split; done
+  mosaic_op relayout
   [ "$(mosaic_pane_count)" = "4" ]
 
   layout=$(mosaic_layout)
