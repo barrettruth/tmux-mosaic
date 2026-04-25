@@ -50,3 +50,12 @@ active_pane_id() {
   [ "$after" != "$before" ]
   [ "$(window_zoomed)" = "1" ]
 }
+
+@test "monocle: _sync-state stays silent when unsupported" {
+  mosaic_split
+
+  run mosaic_exec_direct _sync-state t:1
+
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
