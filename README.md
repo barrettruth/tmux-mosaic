@@ -113,19 +113,19 @@ size back into `@mosaic-mfact`.
 
 ### Core actions
 
-| Action | Behavior |
+| Command | Behavior |
 | --- | --- |
 | `toggle` | Turn `master-stack` off on the current window. |
 | `relayout` | Re-apply the current orientation and `@mosaic-mfact`. |
 | `promote` | Focused stack pane becomes master. On master, swap with stack-top. |
 | `resize-master ±N` | Change `@mosaic-mfact` for the current window, clamped to 5–95. |
-| focus up the stack (builtin) | Move to the previous pane in stack order. |
-| focus down the stack (builtin) | Move to the next pane in stack order. |
-| move pane up the stack (builtin) | Swap with the previous pane in stack order. |
-| move pane down the stack (builtin) | Swap with the next pane in stack order. |
-| split current pane (builtin) | Add a pane and rebalance master plus stack. |
-| kill current pane (builtin) | Remove a pane and rebalance; killing the master promotes the stack-top. |
-| drag-resize master (builtin) | Resize live, then sync the new size back into `@mosaic-mfact`. |
+| `select-pane -t :.-` (builtin) | Focus the previous pane in stack order. |
+| `select-pane -t :.+` (builtin) | Focus the next pane in stack order. |
+| `swap-pane -U` (builtin) | Move the current pane up the stack. |
+| `swap-pane -D` (builtin) | Move the current pane down the stack. |
+| `split-window` (builtin) | Add a pane and rebalance master plus stack. |
+| `kill-pane` (builtin) | Remove a pane and rebalance; killing the master promotes the stack-top. |
+| `resize-pane` (builtin) | Resize the master live, then sync the new size back into `@mosaic-mfact`. |
 
 ### Relevant options
 
@@ -160,16 +160,16 @@ primary pane, so `promote` and `resize-master` are not implemented.
 
 ### Core actions
 
-| Action | Behavior |
+| Command | Behavior |
 | --- | --- |
 | `toggle` | Turn `even-vertical` off on the current window. |
 | `relayout` | Re-apply the equal-height column. |
-| focus up (builtin) | Move to the pane above. |
-| focus down (builtin) | Move to the pane below. |
-| move pane up (builtin) | Swap with the previous pane in the column. |
-| move pane down (builtin) | Swap with the next pane in the column. |
-| split current pane (builtin) | Add a pane and rebalance the column. |
-| kill current pane (builtin) | Remove a pane and rebalance the column. |
+| `select-pane -U` (builtin) | Focus the pane above. |
+| `select-pane -D` (builtin) | Focus the pane below. |
+| `swap-pane -U` (builtin) | Move the current pane toward the top of the column. |
+| `swap-pane -D` (builtin) | Move the current pane toward the bottom of the column. |
+| `split-window` (builtin) | Add a pane and rebalance the column. |
+| `kill-pane` (builtin) | Remove a pane and rebalance the column. |
 
 ### Example config
 
@@ -191,16 +191,16 @@ pane, so `promote` and `resize-master` are not implemented.
 
 ### Core actions
 
-| Action | Behavior |
+| Command | Behavior |
 | --- | --- |
 | `toggle` | Turn `even-horizontal` off on the current window. |
 | `relayout` | Re-apply the equal-width row. |
-| focus left (builtin) | Move to the pane on the left. |
-| focus right (builtin) | Move to the pane on the right. |
-| move pane left (builtin) | Swap with the previous pane in the row. |
-| move pane right (builtin) | Swap with the next pane in the row. |
-| split current pane (builtin) | Add a pane and rebalance the row. |
-| kill current pane (builtin) | Remove a pane and rebalance the row. |
+| `select-pane -L` (builtin) | Focus the pane on the left. |
+| `select-pane -R` (builtin) | Focus the pane on the right. |
+| `swap-pane -U` (builtin) | Move the current pane toward the left side of the row. |
+| `swap-pane -D` (builtin) | Move the current pane toward the right side of the row. |
+| `split-window` (builtin) | Add a pane and rebalance the row. |
+| `kill-pane` (builtin) | Remove a pane and rebalance the row. |
 
 ### Example config
 
@@ -222,16 +222,16 @@ no primary pane, so `promote` and `resize-master` are not implemented.
 
 ### Core actions
 
-| Action | Behavior |
+| Command | Behavior |
 | --- | --- |
 | `toggle` | Turn `grid` off on the current window. |
 | `relayout` | Re-apply tmux's `tiled` layout. |
-| focus left (builtin) | Move to the pane on the left when one exists. |
-| focus right (builtin) | Move to the pane on the right when one exists. |
-| focus up (builtin) | Move to the pane above when one exists. |
-| focus down (builtin) | Move to the pane below when one exists. |
-| split current pane (builtin) | Add a pane and retile the grid. |
-| kill current pane (builtin) | Remove a pane and retile the grid. |
+| `select-pane -L` (builtin) | Focus the pane on the left when one exists. |
+| `select-pane -R` (builtin) | Focus the pane on the right when one exists. |
+| `select-pane -U` (builtin) | Focus the pane above when one exists. |
+| `select-pane -D` (builtin) | Focus the pane below when one exists. |
+| `split-window` (builtin) | Add a pane and retile the grid. |
+| `kill-pane` (builtin) | Remove a pane and retile the grid. |
 
 ### Example config
 
@@ -255,14 +255,14 @@ not implemented.
 
 ### Core actions
 
-| Action | Behavior |
+| Command | Behavior |
 | --- | --- |
 | `toggle` | Turn `monocle` off on the current window. |
 | `relayout` | Re-zoom the active pane. |
-| focus previous pane (builtin) | Show the previous pane and keep it zoomed. |
-| focus next pane (builtin) | Show the next pane and keep it zoomed. |
-| split current pane (builtin) | Add a pane and keep the new pane zoomed. |
-| kill current pane (builtin) | Remove a pane; any remaining active pane stays zoomed. |
+| `select-pane -t :.-` (builtin) | Show the previous pane and keep it zoomed. |
+| `select-pane -t :.+` (builtin) | Show the next pane and keep it zoomed. |
+| `split-window` (builtin) | Add a pane and keep the new pane zoomed. |
+| `kill-pane` (builtin) | Remove a pane; any remaining active pane stays zoomed. |
 
 ### Example config
 
