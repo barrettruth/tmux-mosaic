@@ -1,0 +1,92 @@
+name: Release Metadata
+
+on:
+  pull_request_target:
+    types: [opened, reopened, edited, synchronize, labeled, unlabeled, ready_for_review]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  release_metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const managedLabels = [
+              {
+                name: 'breaking-change',
+                color: 'B60205',
+                description: 'Change that breaks documented user-facing behavior',
+              },
+              {
+                name: 'skip-release-notes',
+                color: 'cfd3d7',
+                description: 'Exclude from generated release notes',
+              },
+            ];
+            for (const label of managedLabels) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name,
+                });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name,
+                  color: label.color,
+                  description: label.description,
+                });
+              }
+            }
+            const issue = context.payload.pull_request;
+            const releaseLabels = new Set(['breaking-change', 'enhancement', 'bug', 'documentation']);
+            const body = issue.body || '';
+            const refs = new Set();
+            const pattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<owner>[A-Za-z0-9_.-]+)\/(?<repo>[A-Za-z0-9_.-]+))?#(?<number>\d+)/gi;
+            for (const match of body.matchAll(pattern)) {
+              const owner = match.groups?.owner;
+              const repo = match.groups?.repo;
+              if (owner && repo && (owner !== context.repo.owner || repo !== context.repo.repo)) continue;
+              refs.add(Number(match.groups.number));
+            }
+            const add = new Set();
+            for (const number of refs) {
+              try {
+                const linked = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: number,
+                });
+                for (const label of linked.data.labels) {
+                  const name = typeof label === 'string' ? label : label.name;
+                  if (releaseLabels.has(name)) add.add(name);
+                }
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            }
+            const current = new Set(issue.labels.map(label => label.name));
+            const toAdd = [...add].filter(name => !current.has(name));
+            if (toAdd.length) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: toAdd,
+              });
+              for (const name of toAdd) current.add(name);
+            }
+            const selected = [...current].filter(name => releaseLabels.has(name));
+            if (current.has('skip-release-notes') && selected.length) {
+              core.setFailed('skip-release-notes cannot be combined with a release category label');
+            }
+            if (selected.length > 1) {
+              core.setFailed(`pull request has multiple release category labels: ${selected.join(', ')}`);
+            }

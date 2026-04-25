@@ -1,0 +1,128 @@
+name: Publish Release
+
+on:
+  workflow_run:
+    workflows: ["quality"]
+    types: [completed]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: release-publish-main
+  cancel-in-progress: false
+
+jobs:
+  publish_release:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const label = {
+              name: 'skip-release-notes',
+              color: 'cfd3d7',
+              description: 'Exclude from generated release notes',
+            };
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label.name,
+              });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label.name,
+                color: label.color,
+                description: label.description,
+              });
+            }
+      - name: Resolve release state
+        id: state
+        run: |
+          git fetch origin main --tags
+          version="$(scripts/release-version.sh get)"
+          if ! scripts/release-version.sh assert-stable "$version" >/dev/null 2>&1; then
+            echo "publish=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          tag="$(scripts/release-version.sh tag "$version")"
+          prs="$(gh api "repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/pulls")"
+          next_dev="$(printf '%s' "$prs" | jq -r '.[0].body // ""' | awk -F': *' '/^next-dev-version:/ { print $2; exit }')"
+          if ! scripts/release-version.sh assert-dev "$next_dev" >/dev/null 2>&1; then
+            next_dev="$(scripts/release-version.sh next-patch-dev "$version")"
+          fi
+          previous_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1 || true)"
+          current_main_version="$(git show origin/main:flake.nix | awk -F'\"' '/version = \"/ { print $2; exit }')"
+          {
+            echo "publish=true"
+            echo "version=$version"
+            echo "tag=$tag"
+            echo "next_dev=$next_dev"
+            echo "previous_tag=$previous_tag"
+            echo "current_main_version=$current_main_version"
+          } >>"$GITHUB_OUTPUT"
+      - name: Generate release notes
+        if: steps.state.outputs.publish == 'true'
+        run: |
+          if [ -n "${{ steps.state.outputs.previous_tag }}" ]; then
+            gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+              -f tag_name="${{ steps.state.outputs.tag }}" \
+              -f target_commitish="$HEAD_SHA" \
+              -f previous_tag_name="${{ steps.state.outputs.previous_tag }}" >"$RUNNER_TEMP/release-notes.json"
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+              -f tag_name="${{ steps.state.outputs.tag }}" \
+              -f target_commitish="$HEAD_SHA" >"$RUNNER_TEMP/release-notes.json"
+          fi
+          jq -r '.body' "$RUNNER_TEMP/release-notes.json" >"$RUNNER_TEMP/release-notes.md"
+      - name: Create or update stable release
+        if: steps.state.outputs.publish == 'true'
+        run: |
+          if ! git ls-remote --exit-code --tags origin "refs/tags/${{ steps.state.outputs.tag }}" >/dev/null 2>&1; then
+            GIT_COMMITTER_NAME='github-actions[bot]' \
+            GIT_COMMITTER_EMAIL='41898282+github-actions[bot]@users.noreply.github.com' \
+            git tag -a "${{ steps.state.outputs.tag }}" "$HEAD_SHA" -m "${{ steps.state.outputs.tag }}"
+            git push origin "refs/tags/${{ steps.state.outputs.tag }}"
+          fi
+          if gh release view "${{ steps.state.outputs.tag }}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "${{ steps.state.outputs.tag }}" --repo "$GITHUB_REPOSITORY" --title "${{ steps.state.outputs.tag }}" --notes-file "$RUNNER_TEMP/release-notes.md"
+          else
+            gh release create "${{ steps.state.outputs.tag }}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --title "${{ steps.state.outputs.tag }}" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+      - name: Open or update next dev PR
+        if: steps.state.outputs.publish == 'true' && steps.state.outputs.current_main_version == steps.state.outputs.version
+        run: |
+          branch="release/next-${{ steps.state.outputs.next_dev }}"
+          title="chore(release): start ${{ steps.state.outputs.next_dev }}"
+          body="$(mktemp)"
+          printf 'released-version: %s\nnext-dev-version: %s\n' "${{ steps.state.outputs.version }}" "${{ steps.state.outputs.next_dev }}" >"$body"
+          git checkout -B "$branch" "$HEAD_SHA"
+          scripts/release-version.sh set "${{ steps.state.outputs.next_dev }}"
+          git add flake.nix
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "chore(release): start ${{ steps.state.outputs.next_dev }}"
+          git push --force-with-lease origin "$branch"
+          pr="$(gh pr list --base main --head "$branch" --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --title "$title" --body-file "$body" --add-label skip-release-notes
+          else
+            gh pr create --base main --head "$branch" --title "$title" --body-file "$body" --label skip-release-notes
+          fi
+          rm -f "$body"

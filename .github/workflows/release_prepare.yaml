@@ -1,0 +1,85 @@
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable version to release
+        required: true
+        type: string
+      next_dev_version:
+        description: Version to put on main after the stable release
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  prepare_release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+      NEXT_DEV_VERSION: ${{ inputs.next_dev_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const label = {
+              name: 'skip-release-notes',
+              color: 'cfd3d7',
+              description: 'Exclude from generated release notes',
+            };
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label.name,
+              });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label.name,
+                color: label.color,
+                description: label.description,
+              });
+            }
+      - name: Validate versions
+        run: |
+          current="$(scripts/release-version.sh get)"
+          scripts/release-version.sh assert-dev "$current"
+          scripts/release-version.sh assert-stable "$VERSION"
+          scripts/release-version.sh assert-dev "$NEXT_DEV_VERSION"
+          base="$(scripts/release-version.sh base "$current")"
+          [ "$base" = "$VERSION" ]
+          [ "$current" != "$NEXT_DEV_VERSION" ]
+      - name: Update flake version
+        run: scripts/release-version.sh set "$VERSION"
+      - name: Commit release branch
+        run: |
+          branch="release/v$VERSION"
+          git checkout -B "$branch"
+          git add flake.nix
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "chore(release): prepare v$VERSION"
+          git push --force-with-lease origin "$branch"
+      - name: Open or update release PR
+        run: |
+          branch="release/v$VERSION"
+          title="chore(release): prepare v$VERSION"
+          body="$(mktemp)"
+          printf 'release-version: %s\nnext-dev-version: %s\n' "$VERSION" "$NEXT_DEV_VERSION" >"$body"
+          pr="$(gh pr list --base main --head "$branch" --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --title "$title" --body-file "$body" --add-label skip-release-notes
+          else
+            gh pr create --base main --head "$branch" --title "$title" --body-file "$body" --label skip-release-notes
+          fi
+          rm -f "$body"

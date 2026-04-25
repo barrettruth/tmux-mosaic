@@ -4,8 +4,12 @@ changelog:
       - duplicate
       - invalid
       - question
+      - skip-release-notes
       - wontfix
   categories:
+    - title: Breaking Changes
+      labels:
+        - breaking-change
     - title: Features
       labels:
         - enhancement
