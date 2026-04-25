@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SOCKET="${MOSAIC_TEST_SOCKET:-mosaic-test}"
 
-mosaic_t() { tmux -L "$SOCKET" "$@"; }
+mosaic_socket() {
+  echo "${MOSAIC_TEST_SOCKET:-mosaic-test}-${BATS_TEST_NUMBER:-0}"
+}
+
+mosaic_t() { tmux -L "$(mosaic_socket)" "$@"; }
 
 mosaic_setup_server() {
   mosaic_t kill-server 2>/dev/null || true
   rm -f /tmp/tmux-mosaic-test.log
-  local conf="${BATS_TEST_TMPDIR:-/tmp}/mosaic-test.conf"
+  local conf
+  conf="${BATS_TEST_TMPDIR:-/tmp}/$(mosaic_socket).conf"
   cat >"$conf" <<EOF
 set -g base-index 1
 set -g pane-base-index 1
@@ -36,7 +40,7 @@ mosaic_split() {
 }
 
 mosaic_socket_path() {
-  echo "${TMUX_TMPDIR:-/tmp}/tmux-$(id -u)/$SOCKET"
+  echo "${TMUX_TMPDIR:-/tmp}/tmux-$(id -u)/$(mosaic_socket)"
 }
 
 mosaic_exec_direct() {
