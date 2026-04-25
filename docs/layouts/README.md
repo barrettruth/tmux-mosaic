@@ -24,6 +24,9 @@ Unset the window-local value to fall back to the global setting again:
 set-option -wqu @mosaic-algorithm
 ```
 
+Each layout page includes a short tmux.conf example for using that layout in a
+real setup.
+
 All layouts support `toggle` and `relayout`. Unsupported operations surface a
 tmux message instead of failing hard. `toggle` disables the current window; if
 the window is locally `off` and a global layout is configured, `toggle`
