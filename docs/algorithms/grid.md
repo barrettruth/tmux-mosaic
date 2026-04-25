@@ -21,15 +21,14 @@
 
 ## Relevant options
 
-No algorithm-specific options. Use `@mosaic-algorithm` to select it and
-`@mosaic-enabled` to turn it on. `@mosaic-orientation`, `@mosaic-mfact`, and
-`@mosaic-step` are ignored.
+No algorithm-specific options. Set `@mosaic-algorithm` to `grid` to select it;
+that implies enabled unless `@mosaic-enabled` is explicitly `0`.
+`@mosaic-orientation`, `@mosaic-mfact`, and `@mosaic-step` are ignored.
 
 ## Example use
 
 ```tmux
 set-option -wq @mosaic-algorithm grid
-set-option -wq @mosaic-enabled 1
 ```
 
 Use stock tmux commands for focus movement, swapping, and zoom.

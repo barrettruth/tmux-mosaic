@@ -5,7 +5,6 @@ load '../helpers.bash'
 setup() {
   mosaic_setup_server
   mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "even-horizontal"
-  mosaic_enable
 }
 
 teardown() {

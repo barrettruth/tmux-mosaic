@@ -37,12 +37,17 @@ equal-split stack using tmux's `main-*` layouts.
 
 ```tmux
 set-option -wq @mosaic-algorithm master-stack
-set-option -wq @mosaic-enabled 1
 set-option -wq @mosaic-orientation right
 
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r , run '#{E:@mosaic-exec} resize-master -5'
 bind -r . run '#{E:@mosaic-exec} resize-master +5'
+```
+
+Or use the current default `master-stack` layout without a window override:
+
+```tmux
+set-option -wq @mosaic-enabled 1
 ```
 
 Stock tmux still handles focus movement, swapping through the ring, and zoom:

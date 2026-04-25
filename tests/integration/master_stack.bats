@@ -224,6 +224,26 @@ assert_orientation_layout() {
   [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-enabled)" ]
 }
 
+@test "window-specific algorithm: toggle off writes 0 and disables relayout" {
+  mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "even-vertical"
+  mosaic_t set-option -wqu -t t:1 "@mosaic-enabled"
+  for _ in 1 2; do mosaic_split; done
+
+  layout=$(mosaic_layout)
+  [[ "$layout" == *"["* ]]
+  [[ "$layout" != *"{"* ]]
+
+  mosaic_op toggle
+  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-enabled)" = "0" ]
+
+  mosaic_t select-layout -t t:1 even-horizontal
+  mosaic_op relayout
+
+  layout=$(mosaic_layout)
+  [[ "$layout" == *"{"* ]]
+  [[ "$layout" != *"["* ]]
+}
+
 @test "unknown algorithm: dispatcher errors cleanly" {
   mosaic_t set-option -gq "@mosaic-default-algorithm" "nonexistent-algo"
   run mosaic_exec_direct focus-next

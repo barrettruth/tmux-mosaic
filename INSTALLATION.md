@@ -51,11 +51,19 @@ Reload tmux if it is already running:
 tmux source-file ~/.tmux.conf
 ```
 
-Enable mosaic on the current window:
+Use the default `master-stack` layout on the current window:
 
 ```tmux
 set-option -wq @mosaic-enabled 1
 ```
+
+Or pick a specific algorithm on the current window:
+
+```tmux
+set-option -wq @mosaic-algorithm grid
+```
+
+Setting `@mosaic-algorithm` on a window implies enabled.
 
 Optional example bindings:
 

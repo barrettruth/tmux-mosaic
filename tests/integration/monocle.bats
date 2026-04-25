@@ -19,25 +19,18 @@ active_pane_id() {
   mosaic_t display-message -p -t "${1:-t:1}" '#{pane_id}'
 }
 
-@test "monocle: toggle on zooms the focused pane" {
+@test "monocle: window algorithm keeps the focused pane zoomed" {
   for _ in 1 2; do mosaic_split; done
   mosaic_t select-pane -t t:1.2
   pid=$(active_pane_id)
 
-  [ "$(window_zoomed)" = "0" ]
-
-  mosaic_op toggle
   sleep 0.2
 
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-enabled)" = "1" ]
   [ "$(window_zoomed)" = "1" ]
   [ "$(active_pane_id)" = "$pid" ]
 }
 
 @test "monocle: split keeps the new pane zoomed" {
-  mosaic_op toggle
-  sleep 0.2
-
   mosaic_split
 
   [ "$(mosaic_pane_count)" = "2" ]
@@ -47,9 +40,6 @@ active_pane_id() {
 
 @test "monocle: selecting the next pane re-zooms the new active pane" {
   for _ in 1 2; do mosaic_split; done
-
-  mosaic_op toggle
-  sleep 0.2
 
   before=$(active_pane_id)
 
