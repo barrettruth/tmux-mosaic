@@ -2,9 +2,9 @@
 
 **Master/stack pane tiling for tmux**
 
-A focused tmux plugin that brings dynamic-WM tiling to panes — Hyprland's
-master layout, faithful to the source. Algorithm-pluggable, opt-in per window,
-no key grabs.
+A focused tmux plugin that brings dynamic-WM tiling to panes — Hyprland's master
+layout, faithful to the source. Algorithm-pluggable, opt-in per window, no key
+grabs.
 
 ```
 ┌────────────┬────────────┐
@@ -62,10 +62,9 @@ Mosaic is **opt-in per window**:
 set-option -wq @mosaic-enabled 1
 ```
 
-Stock tmux already covers the trivial ops (focus, swap, zoom). Mosaic
-adds only the operations tmux can't express on its own. The plugin
-exports `@mosaic-exec` so paths resolve cleanly across nix-store / TPM
-/ manual installs:
+Stock tmux already covers the trivial ops (focus, swap, zoom). Mosaic adds only
+the operations tmux can't express on its own. The plugin exports `@mosaic-exec`
+so paths resolve cleanly across nix-store / TPM / manual installs:
 
 ```tmux
 # Stock tmux primitives — work the way Hyprland's master layout does
@@ -88,41 +87,43 @@ bind T run '#{E:@mosaic-exec} toggle'
 
 mosaic exposes four operations. Everything else is stock tmux.
 
-| Op | Behavior |
-|---|---|
-| `toggle` | Enable/disable tiling on the current window |
-| `promote` | Move focused stack pane to master. On master: swap with stack-top (Hyprland's `swapwithmaster auto`) |
-| `resize-master ±N` | Adjust master size by N percent (clamped 5–95) |
-| `relayout` | Force re-apply the current algorithm (rarely needed — hooks fire on splits, kills, exits, and resizes) |
+| Op                 | Behavior                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| `toggle`           | Enable/disable tiling on the current window                                                            |
+| `promote`          | Move focused stack pane to master. On master: swap with stack-top (Hyprland's `swapwithmaster auto`)   |
+| `resize-master ±N` | Adjust master size by N percent (clamped 5–95)                                                         |
+| `relayout`         | Force re-apply the current algorithm (rarely needed — hooks fire on splits, kills, exits, and resizes) |
 
 For the non-master-stack-specific ops, use stock tmux directly:
 
-| Want | Tmux command |
-|---|---|
-| Focus next/prev pane in the ring | `select-pane -t :.+` / `:.-` |
-| Focus the master | `select-pane -t :.1` (or `:.0` if `pane-base-index` is 0) |
-| Swap focused pane through the ring (Hyprland `swapnext` / `swapprev`) | `swap-pane -D` / `-U` |
-| Zoom focused pane (monocle equivalent) | `resize-pane -Z` |
+| Want                                                                  | Tmux command                                              |
+| --------------------------------------------------------------------- | --------------------------------------------------------- |
+| Focus next/prev pane in the ring                                      | `select-pane -t :.+` / `:.-`                              |
+| Focus the master                                                      | `select-pane -t :.1` (or `:.0` if `pane-base-index` is 0) |
+| Swap focused pane through the ring (Hyprland `swapnext` / `swapprev`) | `swap-pane -D` / `-U`                                     |
+| Zoom focused pane (monocle equivalent)                                | `resize-pane -Z`                                          |
 
-These work because mosaic keeps the layout in tmux's `main-*` family, which positions panes by index and keeps pane 1 as the master. Tmux's index-order ops then traverse the master/stack ring exactly as Hyprland's master layout does.
+These work because mosaic keeps the layout in tmux's `main-*` family, which
+positions panes by index and keeps pane 1 as the master. Tmux's index-order ops
+then traverse the master/stack ring exactly as Hyprland's master layout does.
 
 ## Options
 
-| Option | Scope | Default | Purpose |
-|---|---|---|---|
-| `@mosaic-enabled` | window | unset | Set to `1` to tile this window |
-| `@mosaic-algorithm` | window | (uses default) | Per-window algorithm override |
-| `@mosaic-default-algorithm` | global | `master-stack` | Default for windows without override |
-| `@mosaic-orientation` | window→global | `left` | For `master-stack`: `left`, `right`, `top`, or `bottom` |
-| `@mosaic-mfact` | window→global | `50` | Master size as percent (window-scoped value wins) |
-| `@mosaic-step` | global | `5` | Default `resize-master` step |
-| `@mosaic-debug` | global | `0` | Set to `1` to log to `@mosaic-log-file` |
-| `@mosaic-log-file` | global | `${TMPDIR:-/tmp}/tmux-mosaic-$(uid).log` | Log path when debug on |
+| Option                      | Scope         | Default                                  | Purpose                                                 |
+| --------------------------- | ------------- | ---------------------------------------- | ------------------------------------------------------- |
+| `@mosaic-enabled`           | window        | unset                                    | Set to `1` to tile this window                          |
+| `@mosaic-algorithm`         | window        | (uses default)                           | Per-window algorithm override                           |
+| `@mosaic-default-algorithm` | global        | `master-stack`                           | Default for windows without override                    |
+| `@mosaic-orientation`       | window→global | `left`                                   | For `master-stack`: `left`, `right`, `top`, or `bottom` |
+| `@mosaic-mfact`             | window→global | `50`                                     | Master size as percent (window-scoped value wins)       |
+| `@mosaic-step`              | global        | `5`                                      | Default `resize-master` step                            |
+| `@mosaic-debug`             | global        | `0`                                      | Set to `1` to log to `@mosaic-log-file`                 |
+| `@mosaic-log-file`          | global        | `${TMPDIR:-/tmp}/tmux-mosaic-$(uid).log` | Log path when debug on                                  |
 
 ## Algorithms
 
-Each algorithm is one file under `scripts/algorithms/<name>.sh` exposing a
-fixed contract:
+Each algorithm is one file under `scripts/algorithms/<name>.sh` exposing a fixed
+contract:
 
 ```
 algo_relayout <window-id>      # required — apply the layout
@@ -143,8 +144,8 @@ Faithful to Hyprland's master layout with `nmaster=1`, `new_status=slave`,
 `new_on_top=false`. Implemented atop tmux's native `main-vertical`,
 `main-horizontal`, and mirrored variants, plus `main-pane-width <pct>%` /
 `main-pane-height <pct>%` + `swap-pane -D/-U`. The `swap-pane -D/-U` ring
-matches `MasterAlgorithm::getNextTarget` — same-category neighbor first,
-falls back across the master/stack boundary at the ring edges.
+matches `MasterAlgorithm::getNextTarget` — same-category neighbor first, falls
+back across the master/stack boundary at the ring edges.
 
 ### even-vertical
 
@@ -160,9 +161,9 @@ Equal-width panes in a row via tmux's native `even-horizontal` layout. Set
 
 **Q: Why doesn't `promote` toggle when I'm already master?**
 
-It does, by default. On master, `promote` swaps master with stack-top
-(matches Hyprland's `swapwithmaster auto`). XMonad's no-op semantic is
-intentionally rejected — toggle is more discoverable.
+It does, by default. On master, `promote` swaps master with stack-top (matches
+Hyprland's `swapwithmaster auto`). XMonad's no-op semantic is intentionally
+rejected — toggle is more discoverable.
 
 **Q: My splits don't auto-rebalance.**
 
@@ -171,32 +172,32 @@ window, or bind `toggle` to a key.
 
 **Q: Can I tile some windows and leave others alone?**
 
-Yes — that's the design. Hooks check `@mosaic-enabled` per window before
-acting. Unset windows are inert.
+Yes — that's the design. Hooks check `@mosaic-enabled` per window before acting.
+Unset windows are inert.
 
 ## Known Limitations
 
-- **Single master.** Tmux's native `main-*` layouts are hardcoded to one
-  master pane. Multi-master would require hand-rolled layout strings;
-  intentionally out of scope for v0.x.
+- **Single master.** Tmux's native `main-*` layouts are hardcoded to one master
+  pane. Multi-master would require hand-rolled layout strings; intentionally out
+  of scope for v0.x.
 
-- **No per-pane height factors.** Hyprland's `percSize` lets you bias one
-  slave taller than the others. Tmux can express this via custom layout
-  strings, but mosaic uses native layouts only and stack heights are always
-  equal-split with running remainder.
+- **No per-pane height factors.** Hyprland's `percSize` lets you bias one slave
+  taller than the others. Tmux can express this via custom layout strings, but
+  mosaic uses native layouts only and stack heights are always equal-split with
+  running remainder.
 
 - **Hooks fire only on tmux's structural events.** mosaic intercepts
   `after-split-window`, `after-kill-pane`, `pane-exited`, `pane-died`, and
-  `after-resize-pane`. Operations that bypass these (e.g. direct
-  `select-layout` to a non-`main-*` layout, or `move-pane`
-  reordering) won't trigger relayout. Run `relayout` explicitly if needed.
+  `after-resize-pane`. Operations that bypass these (e.g. direct `select-layout`
+  to a non-`main-*` layout, or `move-pane` reordering) won't trigger relayout.
+  Run `relayout` explicitly if needed.
 
 # Acknowledgements
 
-- [Hyprland](https://github.com/hyprwm/Hyprland) — `MasterAlgorithm.cpp` is
-  the reference for `swap-next` ring semantics
-- [dwm](https://dwm.suckless.org/) and
-  [XMonad](https://xmonad.org/) — the master/stack family that started it all
+- [Hyprland](https://github.com/hyprwm/Hyprland) — `MasterAlgorithm.cpp` is the
+  reference for `swap-next` ring semantics
+- [dwm](https://dwm.suckless.org/) and [XMonad](https://xmonad.org/) — the
+  master/stack family that started it all
 - [saysjonathan/dwm.tmux](https://github.com/saysjonathan/dwm.tmux) — closest
   prior art for the feature space
 - [tmux-plugins/tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect)

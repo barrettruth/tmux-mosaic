@@ -3,7 +3,7 @@ name: Nightly Release
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["quality"]
+    workflows: ['quality']
     types: [completed]
 
 permissions:
@@ -16,7 +16,10 @@ concurrency:
 
 jobs:
   nightly_release:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    if:
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
