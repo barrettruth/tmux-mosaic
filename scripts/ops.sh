@@ -37,7 +37,7 @@ shift || true
 
 WIN_ARG=""
 case "$cmd" in
-relayout)
+relayout | _sync-state)
     WIN_ARG="${1:-}"
     ;;
 esac
@@ -51,6 +51,11 @@ fi
 
 case "$cmd" in
 relayout) algo_relayout "$target_window" ;;
+_sync-state)
+    if declare -f algo_sync_state >/dev/null; then
+        algo_sync_state "$target_window"
+    fi
+    ;;
 toggle) algo_toggle ;;
 focus-next) algo_focus_next ;;
 focus-prev) algo_focus_prev ;;

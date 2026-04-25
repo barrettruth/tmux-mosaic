@@ -103,3 +103,27 @@ algo_resize_master() {
 }
 
 algo_toggle_zoom() { tmux resize-pane -Z; }
+
+algo_sync_state() {
+    local win="$1"
+    mosaic_enabled "$win" || return 0
+    [[ "$(tmux display-message -p -t "$win" '#{window_zoomed_flag}')" == "1" ]] && return 0
+
+    local n
+    n=$(tmux list-panes -t "$win" 2>/dev/null | wc -l)
+    [[ "$n" -le 1 ]] && return 0
+
+    local pbase pane_w window_w pct
+    pbase=$(algo_pane_base)
+    pane_w=$(tmux display-message -p -t "$win.$pbase" '#{pane_width}' 2>/dev/null)
+    window_w=$(tmux display-message -p -t "$win" '#{window_width}' 2>/dev/null)
+    [[ -z "$pane_w" ]] && return 0
+    [[ -z "$window_w" || "$window_w" -le 0 ]] && return 0
+
+    pct=$((pane_w * 100 / window_w))
+    [[ "$pct" -lt 5 ]] && pct=5
+    [[ "$pct" -gt 95 ]] && pct=95
+
+    tmux set-option -wq -t "$win" "@mosaic-mfact" "$pct"
+    mosaic_log "sync-state: win=$win pane_w=$pane_w window_w=$window_w pct=$pct"
+}
