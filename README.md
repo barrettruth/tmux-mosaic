@@ -2,9 +2,6 @@
 
 **Pane tiling layouts for tmux**
 
-A tmux plugin for pane tiling layouts. Mosaic uses native tmux layouts
-where possible and installs no default keybindings.
-
 ## Dependencies
 
 - [tmux](https://github.com/tmux/tmux) 3.2+
@@ -27,37 +24,28 @@ TPM, manual, and nix setup live in [INSTALLATION.md](INSTALLATION.md).
 
 ## Quick Start
 
-Use `master-stack` on the current window:
+tmux-mosaic does _not_ bundle keymaps. You must set them yourself.
+
+For example, to use the `master-stack` layout on the current window:
 
 ```tmux
 set-option -wq @mosaic-algorithm master-stack
 ```
 
-Add your own bindings if you want them. Mosaic exports `@mosaic-exec` so the
-same bindings work across TPM, manual, and nix installs.
+Then, add your custom keybinds with `@mosaic-exec`:
 
 ```tmux
-bind M set-option -wq @mosaic-algorithm master-stack
 bind Enter run '#{E:@mosaic-exec} promote'
-bind -r , run '#{E:@mosaic-exec} resize-master -5'
-bind -r . run '#{E:@mosaic-exec} resize-master +5'
-bind T run '#{E:@mosaic-exec} toggle'
+bind -r ,  run '#{E:@mosaic-exec} resize-master -5'
+bind -r .  run '#{E:@mosaic-exec} resize-master +5'
+bind T     run '#{E:@mosaic-exec} toggle'
 ```
 
-Unset it to turn mosaic off on that window:
+Disable the layout as follows:
 
 ```tmux
 set-option -wqu @mosaic-algorithm
 ```
-
-Bindings shown here are examples only. Mosaic does not install any bindings by
-default.
-
-For `master-stack` behavior, supported operations, and options, see
-[`docs/layouts/master-stack.md`](docs/layouts/master-stack.md).
-
-For other layouts, layout-specific behavior, and the per-layout support matrix,
-see [Layouts](docs/layouts/).
 
 ## Acknowledgements
 
