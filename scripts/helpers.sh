@@ -121,6 +121,36 @@ mosaic_first_client() {
   tmux list-clients -F '#{client_name}' 2>/dev/null | head -n1
 }
 
+mosaic_compute_fingerprint() {
+  local win="$1" algo="$2"
+  local n mfact nmaster orientation window_w window_h zoomed
+  n=$(mosaic_window_pane_count "$win")
+  mfact=$(mosaic_get_w "@mosaic-mfact" "50" "$win")
+  nmaster=$(mosaic_get_w "@mosaic-nmaster" "1" "$win")
+  orientation=$(mosaic_get_w "@mosaic-orientation" "left" "$win")
+  window_w=$(tmux display-message -p -t "$win" '#{window_width}' 2>/dev/null)
+  window_h=$(tmux display-message -p -t "$win" '#{window_height}' 2>/dev/null)
+  zoomed=$(mosaic_window_zoomed "$win")
+  printf '%s|%s|%s|%s|%s|%s|%s|%s\n' \
+    "$algo" "$n" "$mfact" "$nmaster" "$orientation" "$window_w" "$window_h" "$zoomed"
+}
+
+mosaic_fingerprint_get() {
+  mosaic_get_w_raw "@mosaic-_fingerprint" "${1:-}"
+}
+
+mosaic_fingerprint_set() {
+  local win="$1" fp="$2"
+  tmux set-option -wq -t "$win" "@mosaic-_fingerprint" "$fp"
+}
+
+mosaic_sync_mfact() {
+  local win="$1" pct="$2" current
+  current=$(mosaic_get_w_raw "@mosaic-mfact" "$win")
+  [[ "$current" == "$pct" ]] && return 0
+  tmux set-option -wq -t "$win" "@mosaic-mfact" "$pct"
+}
+
 mosaic_show_message() {
   local message="$*" client
   client=$(tmux display-message -p '#{client_name}' 2>/dev/null)
@@ -441,7 +471,7 @@ mosaic_fibonacci_sync_state() {
   [[ "$pct" -lt 5 ]] && pct=5
   [[ "$pct" -gt 95 ]] && pct=95
 
-  tmux set-option -wq -t "$win" "@mosaic-mfact" "$pct"
+  mosaic_sync_mfact "$win" "$pct"
   mosaic_log "sync-state: win=$win layout=$variant pbase=$pbase pane_size=$pane_size window_size=$window_size pct=$pct"
 }
 

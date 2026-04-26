@@ -104,6 +104,6 @@ algo_sync_state() {
   [[ "$pct" -lt 5 ]] && pct=5
   [[ "$pct" -gt 95 ]] && pct=95
 
-  tmux set-option -wq -t "$win" "@mosaic-mfact" "$pct"
+  mosaic_sync_mfact "$win" "$pct"
   mosaic_log "sync-state: win=$win layout=bottom-stack pane_size=$pane_size window_size=$window_size pct=$pct"
 }
