@@ -21,21 +21,6 @@ algo_mfact_for() {
   mosaic_get "@mosaic-mfact" "50"
 }
 
-algo_swap_keep_focus() {
-  local pid
-  pid=$(tmux display-message -p '#{pane_id}')
-  tmux swap-pane "$@"
-  tmux select-pane -t "$pid"
-}
-
-algo_bubble_keep_focus() {
-  local from="$1" to="$2"
-  while [[ "$from" -gt "$to" ]]; do
-    algo_swap_keep_focus -s ":.$from" -t ":.$((from - 1))"
-    from=$((from - 1))
-  done
-}
-
 algo_join_extra_masters() {
   local win="$1" nmaster="$2" n="$3" pbase="$4"
   local idx
@@ -76,9 +61,9 @@ algo_promote() {
   [[ "$n" -le 1 ]] && return 0
 
   if [[ "$idx" -eq "$pbase" ]]; then
-    algo_swap_keep_focus -s ":.$pbase" -t ":.$((pbase + 1))"
+    mosaic_swap_keep_focus -s ":.$pbase" -t ":.$((pbase + 1))"
   else
-    algo_bubble_keep_focus "$idx" "$pbase"
+    mosaic_bubble_keep_focus "$idx" "$pbase"
   fi
   algo_relayout
 }

@@ -185,6 +185,25 @@ mosaic_current_pane_base() {
   tmux display-message -p '#{e|+|:0,#{?pane-base-index,#{pane-base-index},0}}'
 }
 
+mosaic_swap_keep_focus() {
+  local pid
+  pid=$(tmux display-message -p '#{pane_id}')
+  tmux swap-pane "$@"
+  tmux select-pane -t "$pid"
+}
+
+mosaic_bubble_keep_focus() {
+  local from="$1" to="$2"
+  while [[ "$from" -gt "$to" ]]; do
+    mosaic_swap_keep_focus -s ":.$from" -t ":.$((from - 1))"
+    from=$((from - 1))
+  done
+  while [[ "$from" -lt "$to" ]]; do
+    mosaic_swap_keep_focus -s ":.$from" -t ":.$((from + 1))"
+    from=$((from + 1))
+  done
+}
+
 mosaic_fibonacci_variant() {
   if declare -f algo_fibonacci_variant >/dev/null 2>&1; then
     algo_fibonacci_variant
@@ -357,21 +376,6 @@ mosaic_fibonacci_apply_layout() {
   tmux select-layout -t "$win" "$(mosaic_fibonacci_layout_checksum "$body"),$body" 2>/dev/null || true
 }
 
-mosaic_fibonacci_swap_keep_focus() {
-  local pid
-  pid=$(tmux display-message -p '#{pane_id}')
-  tmux swap-pane "$@"
-  tmux select-pane -t "$pid"
-}
-
-mosaic_fibonacci_bubble_keep_focus() {
-  local from="$1" to="$2"
-  while [[ "$from" -gt "$to" ]]; do
-    mosaic_fibonacci_swap_keep_focus -s ":.$from" -t ":.$((from - 1))"
-    from=$((from - 1))
-  done
-}
-
 mosaic_fibonacci_relayout() {
   local variant win n mfact pbase
   variant=$(mosaic_fibonacci_variant)
@@ -396,9 +400,9 @@ mosaic_fibonacci_promote() {
   [[ "$n" -le 1 ]] && return 0
 
   if [[ "$idx" -eq "$pbase" ]]; then
-    mosaic_fibonacci_swap_keep_focus -s ":.$pbase" -t ":.$((pbase + 1))"
+    mosaic_swap_keep_focus -s ":.$pbase" -t ":.$((pbase + 1))"
   else
-    mosaic_fibonacci_bubble_keep_focus "$idx" "$pbase"
+    mosaic_bubble_keep_focus "$idx" "$pbase"
   fi
   mosaic_fibonacci_relayout
 }
