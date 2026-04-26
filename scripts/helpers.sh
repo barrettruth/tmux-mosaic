@@ -11,9 +11,9 @@ mosaic_get_w() {
   local opt="$1" default="$2" target="${3:-}"
   local val
   if [[ -n "$target" ]]; then
-    val=$(tmux show-option -wqv -t "$target" "$opt" 2>/dev/null)
+    val=$(tmux show-option -wqvA -t "$target" "$opt" 2>/dev/null)
   else
-    val=$(tmux show-option -wqv "$opt" 2>/dev/null)
+    val=$(tmux show-option -wqvA "$opt" 2>/dev/null)
   fi
   printf '%s\n' "${val:-$default}"
 }
@@ -119,6 +119,16 @@ mosaic_effective_nmaster() {
 
 mosaic_first_client() {
   tmux list-clients -F '#{client_name}' 2>/dev/null | head -n1
+}
+
+mosaic_mfact_for() {
+  local win="$1" val
+  val=$(tmux show-option -wqvA -t "$win" "@mosaic-mfact" 2>/dev/null)
+  [[ -n "$val" ]] && {
+    printf '%s\n' "$val"
+    return
+  }
+  mosaic_get "@mosaic-mfact" "50"
 }
 
 mosaic_compute_fingerprint() {
@@ -239,16 +249,6 @@ mosaic_fibonacci_variant() {
   else
     printf '%s\n' "spiral"
   fi
-}
-
-mosaic_fibonacci_mfact_for() {
-  local win="$1" val
-  val=$(tmux show-option -wqv -t "$win" "@mosaic-mfact" 2>/dev/null)
-  [[ -n "$val" ]] && {
-    printf '%s\n' "$val"
-    return
-  }
-  mosaic_get "@mosaic-mfact" "50"
 }
 
 mosaic_fibonacci_layout_checksum() {
@@ -411,7 +411,7 @@ mosaic_fibonacci_relayout() {
   win=$(mosaic_resolve_window "${1:-}")
   n=$(mosaic_window_pane_count "$win")
   mosaic_can_relayout_window "$win" "$n" || return 0
-  mfact=$(mosaic_fibonacci_mfact_for "$win")
+  mfact=$(mosaic_mfact_for "$win")
   pbase=$(mosaic_current_pane_base)
 
   mosaic_fibonacci_apply_layout "$win" "$n" "$mfact"
@@ -443,7 +443,7 @@ mosaic_fibonacci_resize_master() {
   fi
   local win cur new
   win=$(mosaic_current_window)
-  cur=$(mosaic_fibonacci_mfact_for "$win")
+  cur=$(mosaic_mfact_for "$win")
   new=$((cur + delta))
   [[ "$new" -lt 5 ]] && new=5
   [[ "$new" -gt 95 ]] && new=95

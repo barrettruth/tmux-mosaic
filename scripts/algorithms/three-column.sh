@@ -4,17 +4,6 @@ algo_pane_count() { tmux display-message -p '#{window_panes}'; }
 algo_pane_index() { tmux display-message -p '#{pane_index}'; }
 algo_pane_base() { tmux display-message -p '#{e|+|:0,#{?pane-base-index,#{pane-base-index},0}}'; }
 
-algo_mfact_for() {
-  local win="$1"
-  local val
-  val=$(tmux show-option -wqv -t "$win" "@mosaic-mfact" 2>/dev/null)
-  [[ -n "$val" ]] && {
-    echo "$val"
-    return
-  }
-  mosaic_get "@mosaic-mfact" "50"
-}
-
 algo_layout_checksum() {
   local layout="$1" csum=0 i ch
   for ((i = 0; i < ${#layout}; i++)); do
@@ -139,7 +128,7 @@ algo_relayout() {
   win=$(mosaic_resolve_window "${1:-}")
   n=$(mosaic_window_pane_count "$win")
   mosaic_can_relayout_window "$win" "$n" || return 0
-  mfact=$(algo_mfact_for "$win")
+  mfact=$(mosaic_mfact_for "$win")
   nmaster=$(mosaic_effective_nmaster "$win" "$n")
   pbase=$(algo_pane_base)
 
@@ -180,7 +169,7 @@ algo_resize_master() {
   fi
   local win cur new
   win=$(mosaic_current_window)
-  cur=$(algo_mfact_for "$win")
+  cur=$(mosaic_mfact_for "$win")
   new=$((cur + delta))
   [[ "$new" -lt 5 ]] && new=5
   [[ "$new" -gt 95 ]] && new=95

@@ -91,3 +91,15 @@ mosaic_op() {
 mosaic_panes_summary() {
   mosaic_t list-panes -t "${1:-t:1}" -F '#{pane_index}:#{pane_id}' | paste -sd' '
 }
+
+mosaic_wait_until() {
+  local timeout_ms="${1:-2000}"
+  shift
+  local elapsed=0
+  while ! "$@" >/dev/null 2>&1; do
+    sleep 0.02
+    elapsed=$((elapsed + 20))
+    [[ "$elapsed" -ge "$timeout_ms" ]] && return 1
+  done
+  return 0
+}

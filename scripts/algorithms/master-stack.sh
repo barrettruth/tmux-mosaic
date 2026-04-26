@@ -54,17 +54,6 @@ algo_apply_layout() {
   tmux select-layout -t "$win" "$(algo_layout_for "$orientation")" 2>/dev/null || true
 }
 
-algo_mfact_for() {
-  local win="$1"
-  local val
-  val=$(tmux show-option -wqv -t "$win" "@mosaic-mfact" 2>/dev/null)
-  [[ -n "$val" ]] && {
-    echo "$val"
-    return
-  }
-  mosaic_get "@mosaic-mfact" "50"
-}
-
 algo_join_extra_masters() {
   local win="$1" orientation="$2" nmaster="$3" n="$4" pbase="$5"
   local flag idx
@@ -81,7 +70,7 @@ algo_relayout() {
   win=$(mosaic_resolve_window "${1:-}")
   n=$(mosaic_window_pane_count "$win")
   mosaic_can_relayout_window "$win" "$n" || return 0
-  mfact=$(algo_mfact_for "$win")
+  mfact=$(mosaic_mfact_for "$win")
   orientation=$(algo_orientation_for "$win")
   nmaster=$(mosaic_effective_nmaster "$win" "$n")
   pbase=$(algo_pane_base)
@@ -121,7 +110,7 @@ algo_resize_master() {
   fi
   local win cur new
   win=$(mosaic_current_window)
-  cur=$(algo_mfact_for "$win")
+  cur=$(mosaic_mfact_for "$win")
   new=$((cur + delta))
   [[ "$new" -lt 5 ]] && new=5
   [[ "$new" -gt 95 ]] && new=95
