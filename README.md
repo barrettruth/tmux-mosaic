@@ -103,15 +103,19 @@ bind U     set-option -wqu @mosaic-algorithm
 Layouts are the pane arrangements Mosaic can apply. The following are provided:
 
 <details>
-<summary><code>master-stack</code> — one primary pane plus equal-split stack</summary>
+<summary><code>master-stack</code> — one or more master panes plus equal-split stack</summary>
 
 ### Behavior
 
-This uses tmux's `main-*` layouts and keeps the master as the first pane in
-tmux's pane order. `@mosaic-orientation` chooses whether the master sits on the
-left, right, top, or bottom. If you kill the master, the stack-top becomes the
-new master on the next relayout, and if you drag-resize it, Mosaic syncs that
-size back into `@mosaic-mfact`.
+This keeps the first `@mosaic-nmaster` panes in the master area and the rest in
+an equal-split stack. `@mosaic-orientation` chooses whether the master area
+sits on the left, right, top, or bottom. `resize-master` changes the size of
+the whole master area, not individual master panes. If you kill inside the
+master area, the next pane in tmux's pane order fills the gap on the next
+relayout, and if you drag-resize the master/stack boundary, Mosaic syncs that
+size back into `@mosaic-mfact`. If `@mosaic-nmaster` is at least the pane
+count, all panes become masters and Mosaic falls back to an equal split in the
+chosen axis.
 
 ### Preview
 
@@ -123,8 +127,8 @@ size back into `@mosaic-mfact`.
 | ------------------------------ | ------------------------------------------------------------------------- |
 | `toggle`                       | Turn `master-stack` off on the current window.                            |
 | `relayout`                     | Re-apply the current orientation and `@mosaic-mfact`.                     |
-| `promote`                      | Focused stack pane becomes master. On master, swap with stack-top.        |
-| `resize-master ±N`             | Change `@mosaic-mfact` for the current window, clamped to 5–95.           |
+| `promote`                      | Focused pane becomes the primary master. On the primary master, rotate the next pane forward. |
+| `resize-master ±N`             | Change the whole master-region size for the current window, clamped to 5–95. |
 | `select-pane -t :.-` (builtin) | Focus the previous pane in stack order.                                   |
 | `select-pane -t :.+` (builtin) | Focus the next pane in stack order.                                       |
 | `swap-pane -U` (builtin)       | Move the current pane up the stack.                                       |
@@ -138,6 +142,7 @@ size back into `@mosaic-mfact`.
 | Option                | Scope         | Default | Effect                                                         |
 | --------------------- | ------------- | ------- | -------------------------------------------------------------- |
 | `@mosaic-orientation` | window→global | `left`  | Chooses `left`, `right`, `top`, or `bottom`                    |
+| `@mosaic-nmaster`     | window→global | `1`     | Keeps the first N panes in the master area                     |
 | `@mosaic-mfact`       | window→global | `50`    | Stores the master size as a percent                            |
 | `@mosaic-step`        | global        | `5`     | Used by `resize-master` when you call it without an explicit N |
 
@@ -146,6 +151,7 @@ size back into `@mosaic-mfact`.
 ```tmux
 set-option -gwq @mosaic-algorithm master-stack
 set-option -gwq @mosaic-orientation right
+set-option -gwq @mosaic-nmaster 2
 
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r , run '#{E:@mosaic-exec} resize-master -5'
