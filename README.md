@@ -207,54 +207,6 @@ bind U set-option -wqu @mosaic-layout
 </details>
 
 <details>
-<summary><code>bottom-stack</code> — master above, stack below</summary>
-
-### Behavior
-
-This is the fixed top-master variant of `master-stack`. It keeps the first
-`@mosaic-nmaster` panes in a master strip across the top and the rest in an
-equal-width stack below. `resize-master` changes the height of the whole master
-region, `promote` follows the same master behavior as `master-stack`,
-and drag-resizing the master boundary syncs back into `@mosaic-mfact`.
-
-### Core actions
-
-| Command                        | Behavior                                                                        |
-| ------------------------------ | ------------------------------------------------------------------------------- |
-| `toggle`                       | Turn `bottom-stack` off on the current window.                                  |
-| `relayout`                     | Re-apply the top-master / bottom-stack split and `@mosaic-mfact`.               |
-| `promote`                      | Focused pane becomes the first master. On the first master, rotate the next pane forward. |
-| `resize-master ±N`             | Change the whole master-region height for the current window, clamped to 5–95.  |
-| `select-pane -t :.-` (builtin) | Focus the previous pane in stack order.                                         |
-| `select-pane -t :.+` (builtin) | Focus the next pane in stack order.                                             |
-| `swap-pane -U` (builtin)       | Move the current pane up the stack.                                             |
-| `swap-pane -D` (builtin)       | Move the current pane down the stack.                                           |
-| `split-window` (builtin)       | Add a pane and rebalance the top master region plus bottom stack.               |
-| `kill-pane` (builtin)          | Remove a pane and rebalance; killing in the master area pulls the next pane up. |
-| `resize-pane` (builtin)        | Resize the master live, then sync the new height back into `@mosaic-mfact`.     |
-
-### Relevant options
-
-| Option            | Scope         | Default | Effect                                              |
-| ----------------- | ------------- | ------- | --------------------------------------------------- |
-| `@mosaic-nmaster` | window→global | `1`     | Keeps the first N panes in the top master area      |
-| `@mosaic-mfact`   | window→global | `50`    | Stores the master-region height as a percent        |
-| `@mosaic-step`    | global        | `5`     | Used by `resize-master` when you call it without N  |
-
-### Example config
-
-```tmux
-bind B set-option -wq @mosaic-layout bottom-stack
-bind Enter run '#{E:@mosaic-exec} promote'
-bind -r , run '#{E:@mosaic-exec} resize-master -5'
-bind -r . run '#{E:@mosaic-exec} resize-master +5'
-bind T run '#{E:@mosaic-exec} toggle'
-bind U set-option -wqu @mosaic-layout
-```
-
-</details>
-
-<details>
 <summary><code>centered-master</code> — center master with side stacks</summary>
 
 ### Behavior
