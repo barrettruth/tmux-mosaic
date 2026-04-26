@@ -24,7 +24,7 @@ active_pane_id() {
   mosaic_t select-pane -t t:1.2
   pid=$(active_pane_id)
 
-  mosaic_wait_window_zoomed 1 t:1 || true
+  mosaic_wait_window_zoomed 1 t:1
 
   [ "$(window_zoomed)" = "1" ]
   [ "$(active_pane_id)" = "$pid" ]
@@ -44,7 +44,7 @@ active_pane_id() {
   before=$(active_pane_id)
 
   mosaic_t select-pane -t :.+
-  mosaic_wait_window_zoomed 1 t:1 || true
+  mosaic_wait_window_zoomed 1 t:1
 
   after=$(active_pane_id)
   [ "$after" != "$before" ]

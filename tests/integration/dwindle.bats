@@ -99,7 +99,7 @@ pane_field() {
   fp=$(mosaic_fingerprint t:1)
 
   mosaic_op resize-master +10
-  mosaic_wait_fingerprint_changed_from "$fp" t:1 || true
+  mosaic_wait_fingerprint_changed_from "$fp" t:1
 
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
   pane1_w=$(pane_field t:1 1 4)
@@ -114,7 +114,7 @@ pane_field() {
   [ "$(mosaic_pane_count)" = "6" ]
 
   mosaic_t kill-pane -t t:1.5
-  mosaic_wait_pane_count_gt 0 t:1.5 || true
+  mosaic_wait_pane_count_gt 0 t:1.5
   mosaic_quiesce
 
   [ "$(mosaic_pane_count)" = "5" ]
@@ -126,7 +126,7 @@ pane_field() {
 @test "dwindle: drag-resize syncs mfact from the primary width" {
   for _ in 1 2; do mosaic_split; done
   mosaic_t resize-pane -t t:1.1 -x 120
-  mosaic_wait_option @mosaic-mfact 60 t:1 || true
+  mosaic_wait_option @mosaic-mfact 60 t:1
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 
   mosaic_split

@@ -55,6 +55,7 @@
           common = [
             pkgs.biome
             pkgs.bats
+            pkgs.parallel
             pkgs.shellcheck
             pkgs.shfmt
             pkgs.tmux

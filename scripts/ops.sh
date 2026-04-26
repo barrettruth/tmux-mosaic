@@ -48,7 +48,8 @@ fi
 if [[ -z "$algo" ]]; then
   case "$cmd" in
   _on-set-option)
-    tmux set-option -wqu -t "$target_window" "@mosaic-_fingerprint" 2>/dev/null
+    mosaic_fingerprint_unset "$target_window"
+    mosaic_pending_fingerprint_unset "$target_window"
     exit 0
     ;;
   relayout | _sync-state) exit 0 ;;
@@ -73,10 +74,12 @@ fi
 
 if [[ "$cmd" == "_on-set-option" ]]; then
   fingerprint=$(mosaic_compute_fingerprint "$target_window" "$algo")
-  cached=$(mosaic_fingerprint_get "$target_window")
+  pending=$(mosaic_pending_fingerprint_get "$target_window")
+  cached="${pending:-$(mosaic_fingerprint_get "$target_window")}"
   if [[ -n "$cached" && "$cached" == "$fingerprint" ]]; then
     exit 0
   fi
+  mosaic_pending_fingerprint_set "$target_window" "$fingerprint"
 fi
 
 dispatch_optional() {
@@ -112,7 +115,8 @@ esac
 
 case "$cmd" in
 relayout | _on-set-option | promote)
-  mosaic_fingerprint_set "$target_window" \
-    "$(mosaic_compute_fingerprint "$target_window" "$algo")"
+  applied_fingerprint=$(mosaic_compute_fingerprint "$target_window" "$algo")
+  mosaic_fingerprint_set "$target_window" "$applied_fingerprint"
+  mosaic_pending_fingerprint_unset "$target_window"
   ;;
 esac

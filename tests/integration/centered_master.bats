@@ -114,7 +114,7 @@ pane_field() {
   fp=$(mosaic_fingerprint t:1)
 
   mosaic_op resize-master +10
-  mosaic_wait_fingerprint_changed_from "$fp" t:1 || true
+  mosaic_wait_fingerprint_changed_from "$fp" t:1
 
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
   pane2_w=$(pane_field t:1 2 4)
@@ -129,7 +129,7 @@ pane_field() {
   [ "$(mosaic_pane_count)" = "5" ]
 
   mosaic_t kill-pane -t t:1.4
-  mosaic_wait_pane_count_gt 0 t:1.4 || true
+  mosaic_wait_pane_count_gt 0 t:1.4
   mosaic_quiesce
 
   [ "$(mosaic_pane_count)" = "4" ]
@@ -142,7 +142,7 @@ pane_field() {
 @test "centered-master: drag-resize syncs mfact from the center width" {
   for _ in 1 2; do mosaic_split; done
   mosaic_t resize-pane -t t:1.2 -x 120
-  mosaic_wait_option @mosaic-mfact 60 t:1 || true
+  mosaic_wait_option @mosaic-mfact 60 t:1
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 
   mosaic_split
