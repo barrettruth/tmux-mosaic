@@ -310,6 +310,53 @@ bind U set-option -wqu @mosaic-algorithm
 </details>
 
 <details>
+<summary><code>spiral</code> — dwm-style Fibonacci spiral</summary>
+
+### Behavior
+
+This follows the dwm fibonacci `spiral` layout. The first pane gets a primary
+region on the left sized by `@mosaic-mfact`, and the remaining panes recurse
+through the leftover space in a clockwise spiral. `promote` bubbles the focused
+pane into the primary slot, `resize-master` changes the first split, and
+drag-resizing that primary boundary syncs back into `@mosaic-mfact`.
+
+### Core actions
+
+| Command                        | Behavior                                                                |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| `toggle`                       | Turn `spiral` off on the current window.                                |
+| `relayout`                     | Re-apply the current Fibonacci spiral with the current `@mosaic-mfact`. |
+| `promote`                      | Focused pane becomes the primary pane. On the primary pane, rotate the next pane forward. |
+| `resize-master ±N`             | Change the first split width for the current window, clamped to 5–95.   |
+| `select-pane -t :.-` (builtin) | Focus the previous pane in tmux pane order.                             |
+| `select-pane -t :.+` (builtin) | Focus the next pane in tmux pane order.                                 |
+| `swap-pane -U` (builtin)       | Move the current pane earlier in tmux pane order.                       |
+| `swap-pane -D` (builtin)       | Move the current pane later in tmux pane order.                         |
+| `split-window` (builtin)       | Add a pane and rebalance the recursive spiral.                          |
+| `kill-pane` (builtin)          | Remove a pane and rebalance the recursive spiral.                       |
+| `resize-pane` (builtin)        | Resize the primary pane live, then sync the new width back into `@mosaic-mfact`. |
+
+### Relevant options
+
+| Option          | Scope         | Default | Effect                                              |
+| --------------- | ------------- | ------- | --------------------------------------------------- |
+| `@mosaic-mfact` | window→global | `50`    | Stores the primary-split width as a percent         |
+| `@mosaic-step`  | global        | `5`     | Used by `resize-master` when you call it without N  |
+
+### Example config
+
+```tmux
+bind S set-option -wq @mosaic-algorithm spiral
+bind Enter run '#{E:@mosaic-exec} promote'
+bind -r , run '#{E:@mosaic-exec} resize-master -5'
+bind -r . run '#{E:@mosaic-exec} resize-master +5'
+bind T run '#{E:@mosaic-exec} toggle'
+bind U set-option -wqu @mosaic-algorithm
+```
+
+</details>
+
+<details>
 <summary><code>even-vertical</code> — equal-height panes in one column</summary>
 
 ### Behavior
