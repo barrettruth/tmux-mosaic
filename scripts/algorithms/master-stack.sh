@@ -34,6 +34,20 @@ algo_main_option_for() {
   esac
 }
 
+algo_full_layout_for() {
+  case "$1" in
+  left | right) echo "even-vertical" ;;
+  top | bottom) echo "even-horizontal" ;;
+  esac
+}
+
+algo_join_flag_for() {
+  case "$1" in
+  left | right) echo "-v" ;;
+  top | bottom) echo "-h" ;;
+  esac
+}
+
 algo_apply_layout() {
   local win="$1" orientation="$2" mfact="$3"
   tmux set-window-option -t "$win" "$(algo_main_option_for "$orientation")" "${mfact}%" 2>/dev/null || true
@@ -58,17 +72,43 @@ algo_swap_keep_focus() {
   tmux select-pane -t "$pid"
 }
 
+algo_bubble_keep_focus() {
+  local from="$1" to="$2"
+  while [[ "$from" -gt "$to" ]]; do
+    algo_swap_keep_focus -s ":.$from" -t ":.$((from - 1))"
+    from=$((from - 1))
+  done
+}
+
+algo_join_extra_masters() {
+  local win="$1" orientation="$2" nmaster="$3" n="$4" pbase="$5"
+  local flag idx
+  flag=$(algo_join_flag_for "$orientation")
+  for ((idx = pbase + 1; idx < pbase + nmaster; idx++)); do
+    tmux join-pane -d "$flag" -s "$win.$idx" -t "$win.$((idx - 1))" 2>/dev/null || true
+  done
+  [[ "$nmaster" -gt 2 ]] && tmux select-layout -t "$win.$pbase" -E 2>/dev/null || true
+  [[ $((n - nmaster)) -gt 1 ]] && tmux select-layout -t "$win.$((pbase + nmaster))" -E 2>/dev/null || true
+}
+
 algo_relayout() {
-  local win n mfact orientation
+  local win n mfact orientation nmaster pbase
   win=$(mosaic_resolve_window "${1:-}")
   n=$(mosaic_window_pane_count "$win")
   mosaic_can_relayout_window "$win" "$n" || return 0
   mfact=$(algo_mfact_for "$win")
   orientation=$(algo_orientation_for "$win")
+  nmaster=$(mosaic_effective_nmaster "$win" "$n")
+  pbase=$(algo_pane_base)
 
   algo_apply_layout "$win" "$orientation" "$mfact"
+  if [[ "$nmaster" -ge "$n" ]]; then
+    tmux select-layout -t "$win" "$(algo_full_layout_for "$orientation")" 2>/dev/null || true
+  elif [[ "$nmaster" -gt 1 ]]; then
+    algo_join_extra_masters "$win" "$orientation" "$nmaster" "$n" "$pbase"
+  fi
 
-  mosaic_log "relayout: win=$win n=$n orientation=$orientation mfact=$mfact"
+  mosaic_log "relayout: win=$win n=$n orientation=$orientation nmaster=$nmaster mfact=$mfact"
 }
 
 algo_toggle() { mosaic_toggle_window algo_relayout; }
@@ -84,7 +124,7 @@ algo_promote() {
   if [[ "$idx" -eq "$pbase" ]]; then
     algo_swap_keep_focus -s ":.$pbase" -t ":.$((pbase + 1))"
   else
-    algo_swap_keep_focus -s ":.$idx" -t ":.$pbase"
+    algo_bubble_keep_focus "$idx" "$pbase"
   fi
   algo_relayout
 }
@@ -109,9 +149,11 @@ algo_sync_state() {
   mosaic_enabled "$win" || return 0
   [[ "$(mosaic_window_zoomed "$win")" == "1" ]] && return 0
 
-  local n
+  local n nmaster
   n=$(mosaic_window_pane_count "$win")
   [[ "$n" -le 1 ]] && return 0
+  nmaster=$(mosaic_effective_nmaster "$win" "$n")
+  [[ "$nmaster" -ge "$n" ]] && return 0
 
   local pbase pane_size window_size pct orientation
   orientation=$(algo_orientation_for "$win")

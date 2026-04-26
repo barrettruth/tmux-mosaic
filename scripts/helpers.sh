@@ -99,6 +99,24 @@ mosaic_window_zoomed() {
   tmux display-message -p -t "$(mosaic_resolve_window "${1:-}")" '#{window_zoomed_flag}'
 }
 
+mosaic_nmaster_for() {
+  local target="${1:-}" val
+  val=$(mosaic_get_w "@mosaic-nmaster" "1" "$target")
+  [[ "$val" =~ ^[1-9][0-9]*$ ]] || {
+    mosaic_log "nmaster: invalid=$val target=$target defaulting=1"
+    val=1
+  }
+  printf '%s\n' "$val"
+}
+
+mosaic_effective_nmaster() {
+  local target="${1:-}" n="${2:-}" val
+  [[ -n "$n" ]] || n=$(mosaic_window_pane_count "$target")
+  val=$(mosaic_nmaster_for "$target")
+  [[ "$val" -gt "$n" ]] && val=$n
+  printf '%s\n' "$val"
+}
+
 mosaic_first_client() {
   tmux list-clients -F '#{client_name}' 2>/dev/null | head -n1
 }

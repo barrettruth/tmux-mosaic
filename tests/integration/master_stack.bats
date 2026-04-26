@@ -15,6 +15,10 @@ set_orientation() {
   mosaic_t set-option -wq -t "${1:-t:1}" "@mosaic-orientation" "${2:?orientation required}"
 }
 
+set_nmaster() {
+  mosaic_t set-option -wq -t "${1:-t:1}" "@mosaic-nmaster" "${2:?nmaster required}"
+}
+
 pane_field() {
   mosaic_t list-panes -t "${1:-t:1}" -F '#{pane_index} #{pane_left} #{pane_top} #{pane_width} #{pane_height}' |
     awk -v idx="${2:?pane index required}" -v field="${3:?field required}" '$1 == idx { print $field }'
@@ -66,6 +70,10 @@ assert_orientation_layout() {
   run mosaic_t show-option -gwqv @mosaic-orientation
   [ "$status" -eq 0 ]
   [ "$output" = "left" ]
+
+  run mosaic_t show-option -gwqv @mosaic-nmaster
+  [ "$status" -eq 0 ]
+  [ "$output" = "1" ]
 }
 
 @test "plugin load: hooks are registered" {
@@ -118,6 +126,38 @@ assert_orientation_layout() {
   [ "${diff#-}" -le 1 ]
 }
 
+@test "nmaster 3: first three panes share the master area" {
+  set_nmaster t:1 3
+  for _ in 1 2 3 4; do mosaic_split; done
+
+  [ "$(pane_field t:1 1 2)" = "0" ]
+  [ "$(pane_field t:1 2 2)" = "0" ]
+  [ "$(pane_field t:1 3 2)" = "0" ]
+  [ "$(pane_field t:1 4 2)" -gt 0 ]
+
+  pane1_h=$(pane_field t:1 1 5)
+  pane2_h=$(pane_field t:1 2 5)
+  pane3_h=$(pane_field t:1 3 5)
+  diff12=$((pane1_h - pane2_h))
+  diff23=$((pane2_h - pane3_h))
+  [ "${diff12#-}" -le 1 ]
+  [ "${diff23#-}" -le 1 ]
+}
+
+@test "nmaster 2 and right orientation keep both masters on the right" {
+  set_nmaster t:1 2
+  set_orientation t:1 right
+  for _ in 1 2 3; do mosaic_split; done
+
+  [ "$(pane_field t:1 1 2)" -gt 0 ]
+  [ "$(pane_field t:1 2 2)" -gt 0 ]
+  [ "$(pane_field t:1 3 2)" = "0" ]
+
+  pane1_w=$(pane_field t:1 1 4)
+  pane2_w=$(pane_field t:1 2 4)
+  [ "$pane1_w" = "$pane2_w" ]
+}
+
 @test "promote from stack: focused pane becomes master" {
   for _ in 1 2 3; do mosaic_split; done
   mosaic_t select-pane -t t:1.3
@@ -137,6 +177,35 @@ assert_orientation_layout() {
   mosaic_op promote
   [ "$(mosaic_pane_id_at t:1.1)" = "$stack_top_pid" ]
   [ "$(mosaic_pane_id_at t:1.2)" = "$master_pid" ]
+}
+
+@test "promote from stack with nmaster 2 bubbles the focused pane to primary" {
+  set_nmaster t:1 2
+  for _ in 1 2 3; do mosaic_split; done
+  master1_pid=$(mosaic_pane_id_at t:1.1)
+  master2_pid=$(mosaic_pane_id_at t:1.2)
+  chosen_pid=$(mosaic_pane_id_at t:1.4)
+  mosaic_t select-pane -t t:1.4
+
+  mosaic_op promote
+
+  [ "$(mosaic_pane_index)" = "1" ]
+  [ "$(mosaic_pane_id_at t:1.1)" = "$chosen_pid" ]
+  [ "$(mosaic_pane_id_at t:1.2)" = "$master1_pid" ]
+  [ "$(mosaic_pane_id_at t:1.3)" = "$master2_pid" ]
+}
+
+@test "promote on primary master with nmaster 2 rotates the next master forward" {
+  set_nmaster t:1 2
+  for _ in 1 2 3; do mosaic_split; done
+  master1_pid=$(mosaic_pane_id_at t:1.1)
+  master2_pid=$(mosaic_pane_id_at t:1.2)
+  mosaic_t select-pane -t t:1.1
+
+  mosaic_op promote
+
+  [ "$(mosaic_pane_id_at t:1.1)" = "$master2_pid" ]
+  [ "$(mosaic_pane_id_at t:1.2)" = "$master1_pid" ]
 }
 
 @test "resize-master adjusts mfact (window-scoped) and clamps" {
@@ -164,6 +233,22 @@ assert_orientation_layout() {
 
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
   [ "$(mosaic_t show-option -wqv -t t:1 main-pane-height)" = "60%" ]
+}
+
+@test "resize-master with nmaster 2 resizes the whole master region" {
+  set_nmaster t:1 2
+  for _ in 1 2 3; do mosaic_split; done
+
+  mosaic_op resize-master +10
+
+  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  pane1_w=$(pane_field t:1 1 4)
+  pane2_w=$(pane_field t:1 2 4)
+  pane3_w=$(pane_field t:1 3 4)
+  [ "$pane1_w" = "$pane2_w" ]
+  [ "$pane1_w" -ge 118 ]
+  [ "$pane1_w" -le 121 ]
+  [ "$pane1_w" -gt "$pane3_w" ]
 }
 
 @test "resize-master on two windows is independent" {
@@ -330,6 +415,21 @@ assert_orientation_layout() {
   pane_w=$(mosaic_t list-panes -t t:1 -F '#{pane_index} #{pane_width}' | awk '$1==1{print $2}')
   [ "$pane_w" -ge 158 ]
   [ "$pane_w" -le 161 ]
+}
+
+@test "drag-resize with nmaster 2 syncs mfact from the master region" {
+  set_nmaster t:1 2
+  for _ in 1 2; do mosaic_split; done
+  mosaic_t resize-pane -t t:1.1 -x 120
+  sleep 0.2
+  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+
+  mosaic_split
+  pane1_w=$(pane_field t:1 1 4)
+  pane2_w=$(pane_field t:1 2 4)
+  [ "$pane1_w" = "$pane2_w" ]
+  [ "$pane1_w" -ge 118 ]
+  [ "$pane1_w" -le 121 ]
 }
 
 @test "drag-resize: zoomed pane does not poison mfact" {
