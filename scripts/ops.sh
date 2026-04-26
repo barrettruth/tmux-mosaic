@@ -47,7 +47,11 @@ fi
 
 if [[ -z "$algo" ]]; then
   case "$cmd" in
-  relayout | _sync-state | _on-set-option) exit 0 ;;
+  _on-set-option)
+    tmux set-option -wqu -t "$target_window" "@mosaic-_fingerprint" 2>/dev/null
+    exit 0
+    ;;
+  relayout | _sync-state) exit 0 ;;
   toggle | promote | resize-master)
     mosaic_show_message "mosaic: no layout configured"
     exit 0
@@ -65,6 +69,14 @@ if [[ $load_rc -ne 0 ]]; then
     ;;
   esac
   exit 1
+fi
+
+if [[ "$cmd" == "_on-set-option" ]]; then
+  fingerprint=$(mosaic_compute_fingerprint "$target_window" "$algo")
+  cached=$(mosaic_fingerprint_get "$target_window")
+  if [[ -n "$cached" && "$cached" == "$fingerprint" ]]; then
+    exit 0
+  fi
 fi
 
 dispatch_optional() {
@@ -95,5 +107,12 @@ resize-master) dispatch_optional algo_resize_master "$@" ;;
 *)
   echo "mosaic: unknown op: $cmd" >&2
   exit 1
+  ;;
+esac
+
+case "$cmd" in
+relayout | _on-set-option | promote)
+  mosaic_fingerprint_set "$target_window" \
+    "$(mosaic_compute_fingerprint "$target_window" "$algo")"
   ;;
 esac

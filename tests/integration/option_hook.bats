@@ -162,3 +162,69 @@ layout_outer() {
   [ "$(layout_outer)" = "[" ]
   [ "$(relayout_count)" = "1" ]
 }
+
+@test "fingerprint cache: setting @mosaic-mfact to its current value triggers zero relayouts" {
+  mosaic_t set-option -wq -t t:1 "@mosaic-mfact" "70"
+  sleep 0.2
+  reset_log
+
+  mosaic_t set-option -wq -t t:1 "@mosaic-mfact" "70"
+  sleep 0.2
+
+  [ "$(relayout_count)" = "0" ]
+}
+
+@test "fingerprint cache: setting @mosaic-orientation to its current value triggers zero relayouts" {
+  mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "right"
+  sleep 0.2
+  reset_log
+
+  mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "right"
+  sleep 0.2
+
+  [ "$(relayout_count)" = "0" ]
+}
+
+@test "fingerprint cache: setting @mosaic-algorithm to its current value triggers zero relayouts" {
+  reset_log
+
+  mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "master-stack"
+  sleep 0.2
+
+  [ "$(relayout_count)" = "0" ]
+}
+
+@test "fingerprint cache: two distinct orientation changes fire two relayouts" {
+  reset_log
+  mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "right"
+  sleep 0.2
+  mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "left"
+  sleep 0.2
+
+  [ "$(relayout_count)" = "2" ]
+}
+
+@test "fingerprint cache: cleared on transition to off so re-enable always relayouts" {
+  reset_log
+
+  mosaic_disable_algorithm
+  sleep 0.2
+  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-_fingerprint)" ]
+
+  mosaic_use_algorithm master-stack
+  sleep 0.2
+  [ "$(relayout_count)" -ge "1" ]
+  [ -n "$(mosaic_t show-option -wqv -t t:1 @mosaic-_fingerprint)" ]
+}
+
+@test "sync short-circuit: drag-resize whose pct is unchanged does not write @mosaic-mfact" {
+  mosaic_t set-option -wq -t t:1 "@mosaic-mfact" "50"
+  sleep 0.2
+  reset_log
+
+  mosaic_t resize-pane -t t:1.1 -x 100
+  sleep 0.3
+
+  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "50" ]
+  [ "$(relayout_count)" = "0" ]
+}
