@@ -115,7 +115,7 @@ size back into `@mosaic-mfact`.
 
 ### Preview
 
-![master-stack layout preview](https://github.com/user-attachments/assets/ec3e9074-f453-41a9-b4dc-c0478d2f134c)
+![master-stack layout preview](https://github.com/user-attachments/assets/237dea14-ac95-4cff-9acf-f6aba92f690f)
 
 ### Core actions
 
@@ -167,7 +167,7 @@ primary pane, so `promote` and `resize-master` are not implemented.
 
 ### Preview
 
-![even-vertical layout preview](https://github.com/user-attachments/assets/2452e809-cbe4-4b33-82b6-7316915ad33d)
+![even-vertical layout preview](https://github.com/user-attachments/assets/e5a52721-f79b-46af-a778-234428fc7a16)
 
 ### Core actions
 
@@ -239,7 +239,7 @@ no primary pane, so `promote` and `resize-master` are not implemented.
 
 ### Preview
 
-![grid layout preview](https://github.com/user-attachments/assets/e5a52721-f79b-46af-a778-234428fc7a16)
+![grid layout preview](https://github.com/user-attachments/assets/2452e809-cbe4-4b33-82b6-7316915ad33d)
 
 ### Core actions
 
@@ -277,7 +277,7 @@ not implemented.
 
 ### Preview
 
-![monocle layout preview](https://github.com/user-attachments/assets/237dea14-ac95-4cff-9acf-f6aba92f690f)
+![monocle layout preview](https://github.com/user-attachments/assets/ec3e9074-f453-41a9-b4dc-c0478d2f134c)
 
 ### Core actions
 
