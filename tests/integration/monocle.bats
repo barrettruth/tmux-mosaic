@@ -3,48 +3,48 @@
 load '../helpers.bash'
 
 setup() {
-  mosaic_setup_server
-  mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "monocle"
+  _mosaic_setup_server
+  _mosaic_t set-option -wq -t t:1 "@mosaic-layout" "monocle"
 }
 
 teardown() {
-  mosaic_teardown_server
+  _mosaic_teardown_server
 }
 
 window_zoomed() {
-  mosaic_t display-message -p -t "${1:-t:1}" '#{window_zoomed_flag}'
+  _mosaic_t display-message -p -t "${1:-t:1}" '#{window_zoomed_flag}'
 }
 
 active_pane_id() {
-  mosaic_t display-message -p -t "${1:-t:1}" '#{pane_id}'
+  _mosaic_t display-message -p -t "${1:-t:1}" '#{pane_id}'
 }
 
-@test "monocle: window algorithm keeps the focused pane zoomed" {
-  for _ in 1 2; do mosaic_split; done
-  mosaic_t select-pane -t t:1.2
+@test "monocle: window layout keeps the focused pane zoomed" {
+  for _ in 1 2; do _mosaic_split; done
+  _mosaic_t select-pane -t t:1.2
   pid=$(active_pane_id)
 
-  mosaic_wait_window_zoomed 1 t:1 || true
+  _mosaic_wait_window_zoomed 1 t:1 || true
 
   [ "$(window_zoomed)" = "1" ]
   [ "$(active_pane_id)" = "$pid" ]
 }
 
 @test "monocle: split keeps the new pane zoomed" {
-  mosaic_split
+  _mosaic_split
 
-  [ "$(mosaic_pane_count)" = "2" ]
+  [ "$(_mosaic_pane_count)" = "2" ]
   [ "$(window_zoomed)" = "1" ]
-  [ "$(mosaic_pane_index)" = "2" ]
+  [ "$(_mosaic_pane_index)" = "2" ]
 }
 
 @test "monocle: selecting the next pane re-zooms the new active pane" {
-  for _ in 1 2; do mosaic_split; done
+  for _ in 1 2; do _mosaic_split; done
 
   before=$(active_pane_id)
 
-  mosaic_t select-pane -t :.+
-  mosaic_wait_window_zoomed 1 t:1 || true
+  _mosaic_t select-pane -t :.+
+  _mosaic_wait_window_zoomed 1 t:1 || true
 
   after=$(active_pane_id)
   [ "$after" != "$before" ]
@@ -52,10 +52,22 @@ active_pane_id() {
 }
 
 @test "monocle: _sync-state stays silent when unsupported" {
-  mosaic_split
+  _mosaic_split
 
-  run mosaic_exec_direct _sync-state t:1
+  run _mosaic_exec_direct _sync-state t:1
 
   [ "$status" -eq 0 ]
   [ -z "$output" ]
+}
+
+@test "monocle: promote surfaces the missing operation message in direct cli use" {
+  run _mosaic_exec_direct promote
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"mosaic: monocle does not implement promote"* ]]
+}
+
+@test "monocle: resize-master surfaces the missing operation message in direct cli use" {
+  run _mosaic_exec_direct resize-master +5
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"mosaic: monocle does not implement resize-master"* ]]
 }
