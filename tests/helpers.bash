@@ -2,27 +2,41 @@
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+_mosaic_test_id() {
+  printf '%s\n' "${BATS_TEST_FILENAME:-}:${BATS_TEST_NAME:-}:${BATS_SUITE_TEST_NUMBER:-${BATS_TEST_NUMBER:-0}}" | cksum | awk '{print $1}'
+}
+
 _mosaic_socket() {
-  echo "${MOSAIC_TEST_SOCKET:-mosaic-test}-${BATS_TEST_NUMBER:-0}"
+  echo "${MOSAIC_TEST_SOCKET:-mosaic-test}-$(_mosaic_test_id)"
 }
 
 _mosaic_t() { tmux -L "$(_mosaic_socket)" "$@"; }
 
+_mosaic_test_tmpdir() {
+  echo "${TMPDIR:-/tmp}/tmux-mosaic-tests/$(_mosaic_test_id)"
+}
+
+_mosaic_log_file() {
+  echo "$(_mosaic_test_tmpdir)/tmux-mosaic-test.log"
+}
+
 _mosaic_setup_server() {
   _mosaic_t kill-server 2>/dev/null || true
-  rm -f /tmp/tmux-mosaic-test.log
+  mkdir -p "$(_mosaic_test_tmpdir)"
+  rm -f "$(_mosaic_log_file)"
   local conf
-  conf="${BATS_TEST_TMPDIR:-/tmp}/$(_mosaic_socket).conf"
+  conf="$(_mosaic_test_tmpdir)/$(_mosaic_socket).conf"
   cat >"$conf" <<EOF
 set -g base-index 1
 set -g pane-base-index 1
 set -g default-terminal "screen-256color"
 run-shell "$REPO_ROOT/mosaic.tmux"
 set-option -gq @mosaic-debug 1
-set-option -gq @mosaic-log-file "/tmp/tmux-mosaic-test.log"
+set-option -gq @mosaic-log-file "$(_mosaic_log_file)"
 EOF
   _mosaic_t -f "$conf" new-session -d -s t -x 200 -y 50 "sleep 3600"
-  sleep 0.05
+  _mosaic_wait_until 3000 \
+    bash -c "[ -n \"\$(tmux -L $(_mosaic_socket) show-option -gqv '@mosaic-exec' 2>/dev/null)\" ]"
 }
 
 _mosaic_teardown_server() {
@@ -50,11 +64,20 @@ _mosaic_clear_layout() {
 }
 
 _mosaic_split() {
-  local target="${1:-t:1}"
-  local before
+  local target="${1:-t:1}" before fp layout
+  _mosaic_quiesce
   before=$(_mosaic_t display-message -p -t "$target" '#{window_panes}' 2>/dev/null || echo 0)
+  fp=$(_mosaic_fingerprint "$target")
+  layout=$(_mosaic_t show-option -wqvA -t "$target" "@mosaic-layout" 2>/dev/null)
   _mosaic_t split-window -t "$target" "sleep 3600"
   _mosaic_wait_pane_count_gt "$before" "$target"
+  if [[ -n "$layout" && "$layout" != "off" ]]; then
+    if [[ -n "$fp" ]]; then
+      _mosaic_wait_fingerprint_changed_from "$fp" "$target"
+    else
+      _mosaic_wait_option_set "@mosaic-_fingerprint" "$target"
+    fi
+  fi
   _mosaic_quiesce
 }
 
@@ -101,22 +124,32 @@ _mosaic_layout_outer() {
 
 _mosaic_log_relayout_count() {
   local n
-  n=$(grep -c '^[^ ]* \[[0-9]*\] relayout:' /tmp/tmux-mosaic-test.log 2>/dev/null) || n=0
+  n=$(grep -c '^[^ ]* \[[0-9]*\] relayout:' "$(_mosaic_log_file)" 2>/dev/null) || n=0
   printf '%s\n' "$n"
 }
 
 _mosaic_log_sync_count() {
   local n
-  n=$(grep -c '^[^ ]* \[[0-9]*\] sync-state:' /tmp/tmux-mosaic-test.log 2>/dev/null) || n=0
+  n=$(grep -c '^[^ ]* \[[0-9]*\] sync-state:' "$(_mosaic_log_file)" 2>/dev/null) || n=0
   printf '%s\n' "$n"
 }
 
+_mosaic_log_line_count() {
+  local log
+  log=$(_mosaic_log_file)
+  [[ -f "$log" ]] || {
+    printf '0\n'
+    return 0
+  }
+  wc -l <"$log"
+}
+
 _mosaic_quiesce() {
-  sleep 0.1
+  _mosaic_wait_log_quiet 1500 100
 }
 
 _mosaic_wait_until() {
-  local timeout_ms="${1:-2000}"
+  local timeout_ms="${1:-3000}"
   shift
   local elapsed=0
   while ! "$@" >/dev/null 2>&1; do
@@ -130,11 +163,11 @@ _mosaic_wait_until() {
 _mosaic_wait_log_quiet() {
   local timeout_ms="${1:-1000}" stable_ms="${2:-100}"
   local elapsed=0 stable_for=0 prev current
-  prev=$(wc -l </tmp/tmux-mosaic-test.log 2>/dev/null || echo 0)
+  prev=$(_mosaic_log_line_count)
   while [[ "$elapsed" -lt "$timeout_ms" ]]; do
     sleep 0.05
     elapsed=$((elapsed + 50))
-    current=$(wc -l </tmp/tmux-mosaic-test.log 2>/dev/null || echo 0)
+    current=$(_mosaic_log_line_count)
     if [[ "$current" == "$prev" ]]; then
       stable_for=$((stable_for + 50))
       [[ "$stable_for" -ge "$stable_ms" ]] && return 0
@@ -143,44 +176,45 @@ _mosaic_wait_log_quiet() {
       prev="$current"
     fi
   done
-  return 0
+  return 1
 }
 
 _mosaic_reset_log() {
   _mosaic_wait_log_quiet 600 100
-  : >/tmp/tmux-mosaic-test.log
+  : >"$(_mosaic_log_file)"
 }
 
 _mosaic_wait_relayout_count_ge() {
-  local expected="${1:?expected count required}" timeout="${2:-1500}"
+  local expected="${1:?expected count required}" timeout="${2:-3000}" log
+  log=$(_mosaic_log_file)
   _mosaic_wait_until "$timeout" bash -c "
-    n=\$(grep -c '^[^ ]* \[[0-9]*\] relayout:' /tmp/tmux-mosaic-test.log 2>/dev/null) || n=0
+    n=\$(grep -c '^[^ ]* \[[0-9]*\] relayout:' '$log' 2>/dev/null) || n=0
     [ \"\$n\" -ge \"$expected\" ]"
 }
 
 _mosaic_wait_log_match() {
-  local pattern="${1:?pattern required}" timeout="${2:-1500}"
-  _mosaic_wait_until "$timeout" grep -q "$pattern" /tmp/tmux-mosaic-test.log
+  local pattern="${1:?pattern required}" timeout="${2:-3000}"
+  _mosaic_wait_until "$timeout" grep -q "$pattern" "$(_mosaic_log_file)"
 }
 
 _mosaic_wait_option() {
-  local opt="${1:?opt required}" expected="${2-}" target="${3:-t:1}" timeout="${4:-1500}"
+  local opt="${1:?opt required}" expected="${2-}" target="${3:-t:1}" timeout="${4:-3000}"
   _mosaic_wait_until "$timeout" \
     bash -c "[ \"\$(tmux -L $(_mosaic_socket) show-option -wqv -t '$target' '$opt' 2>/dev/null)\" = \"$expected\" ]"
 }
 
 _mosaic_wait_option_empty() {
-  _mosaic_wait_option "${1:?opt required}" "" "${2:-t:1}" "${3:-1500}"
+  _mosaic_wait_option "${1:?opt required}" "" "${2:-t:1}" "${3:-3000}"
 }
 
 _mosaic_wait_option_set() {
-  local opt="${1:?opt required}" target="${2:-t:1}" timeout="${3:-1500}"
+  local opt="${1:?opt required}" target="${2:-t:1}" timeout="${3:-3000}"
   _mosaic_wait_until "$timeout" \
     bash -c "[ -n \"\$(tmux -L $(_mosaic_socket) show-option -wqv -t '$target' '$opt' 2>/dev/null)\" ]"
 }
 
 _mosaic_wait_option_changed_from() {
-  local opt="${1:?opt required}" old="${2:?old value required}" target="${3:-t:1}" timeout="${4:-1500}"
+  local opt="${1:?opt required}" old="${2:?old value required}" target="${3:-t:1}" timeout="${4:-3000}"
   _mosaic_wait_until "$timeout" \
     bash -c "v=\$(tmux -L $(_mosaic_socket) show-option -wqv -t '$target' '$opt' 2>/dev/null); [ -n \"\$v\" ] && [ \"\$v\" != \"$old\" ]"
 }
@@ -190,37 +224,37 @@ _mosaic_fingerprint() {
 }
 
 _mosaic_wait_fingerprint_changed_from() {
-  local old="${1-}" target="${2:-t:1}" timeout="${3:-1500}"
+  local old="${1-}" target="${2:-t:1}" timeout="${3:-3000}"
   _mosaic_wait_until "$timeout" \
     bash -c "v=\$(tmux -L $(_mosaic_socket) show-option -wqv -t '$target' '@mosaic-_fingerprint' 2>/dev/null); [ \"\$v\" != \"$old\" ]"
 }
 
 _mosaic_wait_pane_count() {
-  local expected="${1:?expected required}" target="${2:-t:1}" timeout="${3:-1500}"
+  local expected="${1:?expected required}" target="${2:-t:1}" timeout="${3:-3000}"
   _mosaic_wait_until "$timeout" \
     bash -c "[ \"\$(tmux -L $(_mosaic_socket) display-message -p -t '$target' '#{window_panes}' 2>/dev/null)\" = '$expected' ]"
 }
 
 _mosaic_wait_pane_count_gt() {
-  local min="${1:?min required}" target="${2:-t:1}" timeout="${3:-1500}"
+  local min="${1:?min required}" target="${2:-t:1}" timeout="${3:-3000}"
   _mosaic_wait_until "$timeout" \
     bash -c "[ \"\$(tmux -L $(_mosaic_socket) display-message -p -t '$target' '#{window_panes}' 2>/dev/null || echo 0)\" -gt $min ]"
 }
 
 _mosaic_wait_pane_left_gt() {
-  local idx="${1:?idx required}" min="${2:?min required}" target="${3:-t:1}" timeout="${4:-1500}"
+  local idx="${1:?idx required}" min="${2:?min required}" target="${3:-t:1}" timeout="${4:-3000}"
   _mosaic_wait_until "$timeout" \
     bash -c "[ \"\$(tmux -L $(_mosaic_socket) list-panes -t '$target' -F '#{pane_index} #{pane_left}' | awk -v i=$idx '\$1 == i { print \$2 }')\" -gt \"$min\" ]"
 }
 
 _mosaic_wait_layout_outer() {
-  local expected="${1:?[ or { required}" target="${2:-t:1}" timeout="${3:-1500}"
+  local expected="${1:?[ or { required}" target="${2:-t:1}" timeout="${3:-3000}"
   _mosaic_wait_until "$timeout" \
     bash -c "[ \"\$(tmux -L $(_mosaic_socket) display-message -p -t '$target' '#{window_layout}' | cut -d, -f2- | awk 'match(\$0, /[\\[{]/) { print substr(\$0, RSTART, 1); exit }')\" = '$expected' ]"
 }
 
 _mosaic_wait_window_zoomed() {
-  local expected="${1:?0 or 1 required}" target="${2:-t:1}" timeout="${3:-1500}"
+  local expected="${1:?0 or 1 required}" target="${2:-t:1}" timeout="${3:-3000}"
   _mosaic_wait_until "$timeout" \
     bash -c "[ \"\$(tmux -L $(_mosaic_socket) display-message -p -t '$target' '#{window_zoomed_flag}' 2>/dev/null)\" = '$expected' ]"
 }

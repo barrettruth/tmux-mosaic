@@ -96,7 +96,7 @@ pane_field() {
   fp=$(_mosaic_fingerprint t:1)
 
   _mosaic_op resize-master +10
-  _mosaic_wait_fingerprint_changed_from "$fp" t:1 || true
+  _mosaic_wait_fingerprint_changed_from "$fp" t:1
 
   [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
   pane1_w=$(pane_field t:1 1 4)
@@ -111,7 +111,7 @@ pane_field() {
   [ "$(_mosaic_pane_count)" = "5" ]
 
   _mosaic_t kill-pane -t t:1.4
-  _mosaic_wait_pane_count_gt 0 t:1.4 || true
+  _mosaic_wait_pane_count_gt 0 t:1.4
   _mosaic_quiesce
 
   [ "$(_mosaic_pane_count)" = "4" ]
@@ -123,7 +123,7 @@ pane_field() {
 @test "spiral: drag-resize syncs mfact from the master width" {
   for _ in 1 2; do _mosaic_split; done
   _mosaic_t resize-pane -t t:1.1 -x 120
-  _mosaic_wait_option @mosaic-mfact 60 t:1 || true
+  _mosaic_wait_option @mosaic-mfact 60 t:1
   [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 
   _mosaic_split

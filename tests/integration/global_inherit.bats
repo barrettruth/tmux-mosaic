@@ -17,20 +17,20 @@ pane_field() {
 }
 
 wait_pane1_left_gt_zero() {
-  _mosaic_wait_until 1500 \
+  _mosaic_wait_until 3000 \
     bash -c "[ \"\$(tmux -L $(_mosaic_socket) list-panes -t t:1 -F '#{pane_index} #{pane_left}' | awk '\$1 == 1 { print \$2 }')\" -gt 0 ]"
 }
 
 wait_main_pane_width_eq() {
   local expected="$1"
-  _mosaic_wait_until 1500 \
+  _mosaic_wait_until 3000 \
     bash -c "[ \"\$(tmux -L $(_mosaic_socket) show-option -wqv -t t:1 main-pane-width 2>/dev/null)\" = \"$expected\" ]"
 }
 
 @test "global -gwq @mosaic-orientation is honored when window has no local override" {
   _mosaic_t set-option -gwq "@mosaic-orientation" "right"
   for _ in 1 2 3; do _mosaic_split; done
-  wait_pane1_left_gt_zero || true
+  wait_pane1_left_gt_zero
 
   pane1_left=$(pane_field t:1 1 2)
   [ "$pane1_left" -gt 0 ]
@@ -39,8 +39,8 @@ wait_main_pane_width_eq() {
 @test "global -gwq @mosaic-orientation top puts the master on top" {
   _mosaic_t set-option -gwq "@mosaic-orientation" "top"
   for _ in 1 2 3; do _mosaic_split; done
-  _mosaic_wait_until 1500 \
-    bash -c "[ \"\$(tmux -L $(_mosaic_socket) list-panes -t t:1 -F '#{pane_index} #{pane_top}' | awk '\$1 == 2 { print \$2 }')\" -gt 0 ]" || true
+  _mosaic_wait_until 3000 \
+    bash -c "[ \"\$(tmux -L $(_mosaic_socket) list-panes -t t:1 -F '#{pane_index} #{pane_top}' | awk '\$1 == 2 { print \$2 }')\" -gt 0 ]"
 
   pane1_top=$(pane_field t:1 1 3)
   pane1_height=$(pane_field t:1 1 5)
@@ -52,8 +52,8 @@ wait_main_pane_width_eq() {
 @test "global -gwq @mosaic-nmaster is honored when window has no local override" {
   _mosaic_t set-option -gwq "@mosaic-nmaster" "2"
   for _ in 1 2 3; do _mosaic_split; done
-  _mosaic_wait_until 1500 \
-    bash -c "[ \"\$(tmux -L $(_mosaic_socket) list-panes -t t:1 -F '#{pane_index} #{pane_top}' | awk '\$1 == 2 { print \$2 }')\" -gt 0 ]" || true
+  _mosaic_wait_until 3000 \
+    bash -c "[ \"\$(tmux -L $(_mosaic_socket) list-panes -t t:1 -F '#{pane_index} #{pane_top}' | awk '\$1 == 2 { print \$2 }')\" -gt 0 ]"
 
   pane1_left=$(pane_field t:1 1 2)
   pane2_left=$(pane_field t:1 2 2)
@@ -69,7 +69,7 @@ wait_main_pane_width_eq() {
 @test "global -gwq @mosaic-mfact is honored when window has no local override" {
   _mosaic_t set-option -gwq "@mosaic-mfact" "70"
   for _ in 1 2; do _mosaic_split; done
-  wait_main_pane_width_eq "70%" || true
+  wait_main_pane_width_eq "70%"
 
   pane1_w=$(pane_field t:1 1 4)
   total_w=$(_mosaic_t display-message -p -t t:1 '#{window_width}')
@@ -97,7 +97,7 @@ wait_main_pane_width_eq() {
   [ "$pane1_left" = "0" ]
 
   _mosaic_t set-option -wqu -t t:1 "@mosaic-orientation"
-  wait_pane1_left_gt_zero || true
+  wait_pane1_left_gt_zero
 
   pane1_left=$(pane_field t:1 1 2)
   [ "$pane1_left" -gt 0 ]
@@ -106,8 +106,8 @@ wait_main_pane_width_eq() {
 @test "fingerprint reflects -gwq global when window has no local override" {
   _mosaic_t set-option -gwq "@mosaic-nmaster" "2"
   _mosaic_split
-  _mosaic_wait_until 1500 \
-    bash -c "[[ \"\$(tmux -L $(_mosaic_socket) show-option -wqv -t t:1 @mosaic-_fingerprint)\" == *'|2|'* ]]" || true
+  _mosaic_wait_until 3000 \
+    bash -c "[[ \"\$(tmux -L $(_mosaic_socket) show-option -wqv -t t:1 @mosaic-_fingerprint)\" == *'|2|'* ]]"
 
   fp=$(_mosaic_t show-option -wqv -t t:1 @mosaic-_fingerprint)
   [[ "$fp" == *"|2|"* ]]

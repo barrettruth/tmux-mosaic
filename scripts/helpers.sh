@@ -149,9 +149,26 @@ _mosaic_fingerprint_get() {
   _mosaic_get_w_raw "@mosaic-_fingerprint" "${1:-}"
 }
 
+_mosaic_pending_fingerprint_get() {
+  _mosaic_get_w_raw "@mosaic-_pending-fingerprint" "${1:-}"
+}
+
 _mosaic_fingerprint_set() {
   local win="$1" fp="$2"
   tmux set-option -wq -t "$win" "@mosaic-_fingerprint" "$fp"
+}
+
+_mosaic_fingerprint_unset() {
+  tmux set-option -wqu -t "$1" "@mosaic-_fingerprint" 2>/dev/null
+}
+
+_mosaic_pending_fingerprint_set() {
+  local win="$1" fp="$2"
+  tmux set-option -wq -t "$win" "@mosaic-_pending-fingerprint" "$fp"
+}
+
+_mosaic_pending_fingerprint_unset() {
+  tmux set-option -wqu -t "$1" "@mosaic-_pending-fingerprint" 2>/dev/null
 }
 
 _mosaic_sync_mfact() {
@@ -479,8 +496,11 @@ _mosaic_log() {
   local debug
   debug=$(_mosaic_get "@mosaic-debug" "0")
   [[ "$debug" != "1" ]] && return 0
-  local logfile default_log
+  local logfile default_log logdir
   default_log="${TMPDIR:-/tmp}/tmux-mosaic-$(id -u).log"
   logfile=$(_mosaic_get "@mosaic-log-file" "$default_log")
-  printf '%s [%d] %s\n' "$(date +%H:%M:%S.%N)" "$$" "$*" >>"$logfile"
+  logdir=$(dirname "$logfile")
+  mkdir -p "$logdir" 2>/dev/null || true
+  printf '%s [%d] %s\n' "$(date +%H:%M:%S.%N)" "$$" "$*" >>"$logfile" 2>/dev/null || true
+  return 0
 }
