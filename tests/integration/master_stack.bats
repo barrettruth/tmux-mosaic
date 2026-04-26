@@ -229,8 +229,11 @@ assert_orientation_layout() {
   set_orientation t:1 top
   mosaic_op relayout
 
+  fp=$(mosaic_fingerprint t:1)
+
+
   mosaic_op resize-master +10
-  sleep 0.2
+  mosaic_wait_fingerprint_changed_from "$fp" t:1 || true
 
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
   [ "$(mosaic_t show-option -wqv -t t:1 main-pane-height)" = "60%" ]
@@ -240,8 +243,11 @@ assert_orientation_layout() {
   set_nmaster t:1 2
   for _ in 1 2 3; do mosaic_split; done
 
+  fp=$(mosaic_fingerprint t:1)
+
+
   mosaic_op resize-master +10
-  sleep 0.2
+  mosaic_wait_fingerprint_changed_from "$fp" t:1 || true
 
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
   pane1_w=$(pane_field t:1 1 4)
@@ -258,7 +264,8 @@ assert_orientation_layout() {
   mosaic_t new-window -t t: "sleep 3600"
   mosaic_use_algorithm master-stack t:2
   mosaic_t split-window -t t:2 "sleep 3600"
-  sleep 0.15
+  mosaic_wait_pane_count 2 t:2 || true
+  mosaic_quiesce
 
   mosaic_t select-window -t t:1
   mosaic_op resize-master +20
@@ -274,7 +281,8 @@ assert_orientation_layout() {
   for _ in 1 2 3 4; do mosaic_split; done
   [ "$(mosaic_pane_count)" = "5" ]
   mosaic_t kill-pane -t t:1.3
-  sleep 0.2
+  mosaic_wait_pane_count_gt 0 t:1.3 || true
+  mosaic_quiesce
   [ "$(mosaic_pane_count)" = "4" ]
   pane2_h=$(mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==2{print $2}')
   pane3_h=$(mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==3{print $2}')
@@ -287,7 +295,8 @@ assert_orientation_layout() {
   [ "$(mosaic_pane_count)" = "3" ]
   stack_top=$(mosaic_pane_id_at t:1.2)
   mosaic_t kill-pane -t t:1.1
-  sleep 0.2
+  mosaic_wait_pane_count_gt 0 t:1.1 || true
+  mosaic_quiesce
   [ "$(mosaic_pane_count)" = "2" ]
   [ "$(mosaic_pane_id_at t:1.1)" = "$stack_top" ]
   layout=$(mosaic_layout)
@@ -394,7 +403,8 @@ assert_orientation_layout() {
   for _ in 1 2; do mosaic_split; done
 
   mosaic_op toggle
-  sleep 0.2
+  mosaic_wait_option_empty @mosaic-algorithm t:1 || true
+  mosaic_wait_layout_outer '{' t:1 || true
   [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
 
   layout=$(mosaic_layout)
@@ -411,7 +421,7 @@ assert_orientation_layout() {
 @test "drag-resize: master width survives next split" {
   mosaic_split
   mosaic_t resize-pane -t t:1.1 -x 160
-  sleep 0.2
+  mosaic_wait_option @mosaic-mfact 80 t:1 || true
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "80" ]
 
   mosaic_split
@@ -424,7 +434,7 @@ assert_orientation_layout() {
   set_nmaster t:1 2
   for _ in 1 2; do mosaic_split; done
   mosaic_t resize-pane -t t:1.1 -x 120
-  sleep 0.2
+  mosaic_wait_option @mosaic-mfact 60 t:1 || true
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 
   mosaic_split
@@ -438,16 +448,16 @@ assert_orientation_layout() {
 @test "drag-resize: zoomed pane does not poison mfact" {
   mosaic_split
   mosaic_t resize-pane -t t:1.1 -x 120
-  sleep 0.2
+  mosaic_wait_option @mosaic-mfact 60 t:1 || true
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 
   mosaic_t select-pane -t t:1.1
   mosaic_t resize-pane -Z
-  sleep 0.2
+  mosaic_wait_option @mosaic-mfact 60 t:1 || true
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 
   mosaic_t resize-pane -Z
-  sleep 0.2
+  mosaic_wait_option @mosaic-mfact 60 t:1 || true
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 }
 
@@ -455,7 +465,7 @@ assert_orientation_layout() {
   set_orientation t:1 top
   mosaic_split
   mosaic_t resize-pane -t t:1.1 -y 30
-  sleep 0.2
+  mosaic_wait_option_changed_from @mosaic-mfact 50 t:1 || true
 
   mfact=$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)
   [ "$mfact" -ge 55 ]
