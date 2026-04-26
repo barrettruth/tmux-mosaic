@@ -95,7 +95,6 @@ pane_field() {
 
   fp=$(mosaic_fingerprint t:1)
 
-
   mosaic_op resize-master +10
   mosaic_wait_fingerprint_changed_from "$fp" t:1 || true
 

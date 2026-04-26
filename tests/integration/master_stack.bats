@@ -231,7 +231,6 @@ assert_orientation_layout() {
 
   fp=$(mosaic_fingerprint t:1)
 
-
   mosaic_op resize-master +10
   mosaic_wait_fingerprint_changed_from "$fp" t:1 || true
 
@@ -244,7 +243,6 @@ assert_orientation_layout() {
   for _ in 1 2 3; do mosaic_split; done
 
   fp=$(mosaic_fingerprint t:1)
-
 
   mosaic_op resize-master +10
   mosaic_wait_fingerprint_changed_from "$fp" t:1 || true
