@@ -3,36 +3,36 @@
 load '../helpers.bash'
 
 setup() {
-  mosaic_setup_server
-  mosaic_use_algorithm master-stack
+  _mosaic_setup_server
+  _mosaic_use_layout master-stack
 }
 
 teardown() {
-  mosaic_teardown_server
+  _mosaic_teardown_server
 }
 
 set_orientation() {
-  mosaic_t set-option -wq -t "${1:-t:1}" "@mosaic-orientation" "${2:?orientation required}"
+  _mosaic_t set-option -wq -t "${1:-t:1}" "@mosaic-orientation" "${2:?orientation required}"
 }
 
 set_nmaster() {
-  mosaic_t set-option -wq -t "${1:-t:1}" "@mosaic-nmaster" "${2:?nmaster required}"
+  _mosaic_t set-option -wq -t "${1:-t:1}" "@mosaic-nmaster" "${2:?nmaster required}"
 }
 
 pane_field() {
-  mosaic_t list-panes -t "${1:-t:1}" -F '#{pane_index} #{pane_left} #{pane_top} #{pane_width} #{pane_height}' |
+  _mosaic_t list-panes -t "${1:-t:1}" -F '#{pane_index} #{pane_left} #{pane_top} #{pane_width} #{pane_height}' |
     awk -v idx="${2:?pane index required}" -v field="${3:?field required}" '$1 == idx { print $field }'
 }
 
-layout_outer() {
-  mosaic_layout "${1:-t:1}" | awk 'match($0, /[\[{]/) { print substr($0, RSTART, 1) }'
+_layout_outer() {
+  _mosaic_layout "${1:-t:1}" | awk 'match($0, /[\[{]/) { print substr($0, RSTART, 1) }'
 }
 
 assert_orientation_layout() {
   local orient="${1:?orientation required}" outer
   set_orientation t:1 "$orient"
-  for _ in 1 2 3; do mosaic_split; done
-  outer=$(layout_outer)
+  for _ in 1 2 3; do _mosaic_split; done
+  outer=$(_layout_outer)
 
   case "$orient" in
   left)
@@ -59,43 +59,43 @@ assert_orientation_layout() {
 }
 
 @test "plugin load: defaults are set" {
-  run mosaic_t show-option -gqv @mosaic-mfact
+  run _mosaic_t show-option -gqv @mosaic-mfact
   [ "$status" -eq 0 ]
   [ "$output" = "50" ]
 
-  run mosaic_t show-option -gwqv @mosaic-algorithm
+  run _mosaic_t show-option -gwqv @mosaic-layout
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 
-  run mosaic_t show-option -gwqv @mosaic-orientation
+  run _mosaic_t show-option -gwqv @mosaic-orientation
   [ "$status" -eq 0 ]
   [ "$output" = "left" ]
 
-  run mosaic_t show-option -gwqv @mosaic-nmaster
+  run _mosaic_t show-option -gwqv @mosaic-nmaster
   [ "$status" -eq 0 ]
   [ "$output" = "1" ]
 }
 
 @test "plugin load: hooks are registered" {
-  run mosaic_t show-hooks -g after-split-window
+  run _mosaic_t show-hooks -g after-split-window
   [ "$status" -eq 0 ]
   [[ "$output" == *"relayout"* ]]
 
-  run mosaic_t show-hooks -g after-kill-pane
+  run _mosaic_t show-hooks -g after-kill-pane
   [[ "$output" == *"relayout"* ]]
 }
 
 @test "single pane: relayout is no-op" {
-  [ "$(mosaic_pane_count)" = "1" ]
-  mosaic_op relayout
-  [ "$(mosaic_pane_count)" = "1" ]
+  [ "$(_mosaic_pane_count)" = "1" ]
+  _mosaic_op relayout
+  [ "$(_mosaic_pane_count)" = "1" ]
 }
 
 @test "split: hook applies main-vertical" {
-  mosaic_split
-  layout=$(mosaic_layout)
+  _mosaic_split
+  layout=$(_mosaic_layout)
   [[ "$layout" == *"{"* ]]
-  [[ "$layout" == *"["* ]] || [ "$(mosaic_pane_count)" = "2" ]
+  [[ "$layout" == *"["* ]] || [ "$(_mosaic_pane_count)" = "2" ]
 }
 
 @test "orientation left keeps the master on the left" {
@@ -115,20 +115,20 @@ assert_orientation_layout() {
 }
 
 @test "5 panes: master + equal-split stack" {
-  for _ in 1 2 3 4; do mosaic_split; done
-  [ "$(mosaic_pane_count)" = "5" ]
-  layout=$(mosaic_layout)
+  for _ in 1 2 3 4; do _mosaic_split; done
+  [ "$(_mosaic_pane_count)" = "5" ]
+  layout=$(_mosaic_layout)
   [[ "$layout" == *"{"* ]]
   [[ "$layout" == *"["* ]]
-  pane2_h=$(mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==2{print $2}')
-  pane3_h=$(mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==3{print $2}')
+  pane2_h=$(_mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==2{print $2}')
+  pane3_h=$(_mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==3{print $2}')
   diff=$((pane2_h - pane3_h))
   [ "${diff#-}" -le 1 ]
 }
 
 @test "nmaster 3: first three panes share the master area" {
   set_nmaster t:1 3
-  for _ in 1 2 3 4; do mosaic_split; done
+  for _ in 1 2 3 4; do _mosaic_split; done
 
   [ "$(pane_field t:1 1 2)" = "0" ]
   [ "$(pane_field t:1 2 2)" = "0" ]
@@ -147,7 +147,7 @@ assert_orientation_layout() {
 @test "nmaster 2 and right orientation keep both masters on the right" {
   set_nmaster t:1 2
   set_orientation t:1 right
-  for _ in 1 2 3; do mosaic_split; done
+  for _ in 1 2 3; do _mosaic_split; done
 
   [ "$(pane_field t:1 1 2)" -gt 0 ]
   [ "$(pane_field t:1 2 2)" -gt 0 ]
@@ -158,96 +158,111 @@ assert_orientation_layout() {
   [ "$pane1_w" = "$pane2_w" ]
 }
 
-@test "promote from stack: focused pane becomes master" {
-  for _ in 1 2 3; do mosaic_split; done
-  mosaic_t select-pane -t t:1.3
-  pid=$(mosaic_t display-message -p -t t:1 '#{pane_id}')
-
-  mosaic_op promote
-  [ "$(mosaic_pane_index)" = "1" ]
-  [ "$(mosaic_t display-message -p -t t:1 '#{pane_id}')" = "$pid" ]
-}
-
-@test "promote on master: swaps with stack-top (Hyprland swapwithmaster)" {
-  for _ in 1 2 3; do mosaic_split; done
-  mosaic_t select-pane -t t:1.1
-  master_pid=$(mosaic_pane_id_at t:1.1)
-  stack_top_pid=$(mosaic_pane_id_at t:1.2)
-
-  mosaic_op promote
-  [ "$(mosaic_pane_id_at t:1.1)" = "$stack_top_pid" ]
-  [ "$(mosaic_pane_id_at t:1.2)" = "$master_pid" ]
-}
-
-@test "promote from stack with nmaster 2 bubbles the focused pane to primary" {
+@test "nmaster 2 and top orientation keep both masters in the top row" {
   set_nmaster t:1 2
-  for _ in 1 2 3; do mosaic_split; done
-  master1_pid=$(mosaic_pane_id_at t:1.1)
-  master2_pid=$(mosaic_pane_id_at t:1.2)
-  chosen_pid=$(mosaic_pane_id_at t:1.4)
-  mosaic_t select-pane -t t:1.4
+  set_orientation t:1 top
+  for _ in 1 2 3; do _mosaic_split; done
 
-  mosaic_op promote
+  [ "$(pane_field t:1 1 3)" = "0" ]
+  [ "$(pane_field t:1 2 3)" = "0" ]
+  [ "$(pane_field t:1 3 3)" -gt 0 ]
 
-  [ "$(mosaic_pane_index)" = "1" ]
-  [ "$(mosaic_pane_id_at t:1.1)" = "$chosen_pid" ]
-  [ "$(mosaic_pane_id_at t:1.2)" = "$master1_pid" ]
-  [ "$(mosaic_pane_id_at t:1.3)" = "$master2_pid" ]
+  pane1_w=$(pane_field t:1 1 4)
+  pane2_w=$(pane_field t:1 2 4)
+  diff=$((pane1_w - pane2_w))
+  [ "${diff#-}" -le 1 ]
 }
 
-@test "promote on primary master with nmaster 2 rotates the next master forward" {
+@test "promote from stack: focused pane becomes first master" {
+  for _ in 1 2 3; do _mosaic_split; done
+  _mosaic_t select-pane -t t:1.3
+  pid=$(_mosaic_t display-message -p -t t:1 '#{pane_id}')
+
+  _mosaic_op promote
+  [ "$(_mosaic_pane_index)" = "1" ]
+  [ "$(_mosaic_t display-message -p -t t:1 '#{pane_id}')" = "$pid" ]
+}
+
+@test "promote on first master: swaps with stack-top (Hyprland swapwithmaster)" {
+  for _ in 1 2 3; do _mosaic_split; done
+  _mosaic_t select-pane -t t:1.1
+  master_pid=$(_mosaic_pane_id_at t:1.1)
+  stack_top_pid=$(_mosaic_pane_id_at t:1.2)
+
+  _mosaic_op promote
+  [ "$(_mosaic_pane_id_at t:1.1)" = "$stack_top_pid" ]
+  [ "$(_mosaic_pane_id_at t:1.2)" = "$master_pid" ]
+}
+
+@test "promote from stack with nmaster 2 bubbles the focused pane to first master" {
   set_nmaster t:1 2
-  for _ in 1 2 3; do mosaic_split; done
-  master1_pid=$(mosaic_pane_id_at t:1.1)
-  master2_pid=$(mosaic_pane_id_at t:1.2)
-  mosaic_t select-pane -t t:1.1
+  for _ in 1 2 3; do _mosaic_split; done
+  master1_pid=$(_mosaic_pane_id_at t:1.1)
+  master2_pid=$(_mosaic_pane_id_at t:1.2)
+  chosen_pid=$(_mosaic_pane_id_at t:1.4)
+  _mosaic_t select-pane -t t:1.4
 
-  mosaic_op promote
+  _mosaic_op promote
 
-  [ "$(mosaic_pane_id_at t:1.1)" = "$master2_pid" ]
-  [ "$(mosaic_pane_id_at t:1.2)" = "$master1_pid" ]
+  [ "$(_mosaic_pane_index)" = "1" ]
+  [ "$(_mosaic_pane_id_at t:1.1)" = "$chosen_pid" ]
+  [ "$(_mosaic_pane_id_at t:1.2)" = "$master1_pid" ]
+  [ "$(_mosaic_pane_id_at t:1.3)" = "$master2_pid" ]
+}
+
+@test "promote on first master with nmaster 2 rotates the next master forward" {
+  set_nmaster t:1 2
+  for _ in 1 2 3; do _mosaic_split; done
+  master1_pid=$(_mosaic_pane_id_at t:1.1)
+  master2_pid=$(_mosaic_pane_id_at t:1.2)
+  _mosaic_t select-pane -t t:1.1
+
+  _mosaic_op promote
+
+  [ "$(_mosaic_pane_id_at t:1.1)" = "$master2_pid" ]
+  [ "$(_mosaic_pane_id_at t:1.2)" = "$master1_pid" ]
 }
 
 @test "resize-master adjusts mfact (window-scoped) and clamps" {
-  mosaic_split
-  [ "$(mosaic_t show-option -gqv @mosaic-mfact)" = "50" ]
-  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" ]
+  _mosaic_split
+  [ "$(_mosaic_t show-option -gqv @mosaic-mfact)" = "50" ]
+  [ -z "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" ]
 
-  mosaic_op resize-master +10
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
-  [ "$(mosaic_t show-option -gqv @mosaic-mfact)" = "50" ]
+  _mosaic_op resize-master +10
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  [ "$(_mosaic_t show-option -gqv @mosaic-mfact)" = "50" ]
 
-  mosaic_op resize-master -100
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "5" ]
+  _mosaic_op resize-master -100
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "5" ]
 
-  mosaic_op resize-master +200
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "95" ]
+  _mosaic_op resize-master +200
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "95" ]
 }
 
 @test "resize-master in top orientation writes main-pane-height" {
-  for _ in 1 2 3; do mosaic_split; done
+  for _ in 1 2 3; do _mosaic_split; done
   set_orientation t:1 top
-  mosaic_op relayout
+  _mosaic_op relayout
 
-  fp=$(mosaic_fingerprint t:1)
+  fp=$(_mosaic_fingerprint t:1)
 
-  mosaic_op resize-master +10
-  mosaic_wait_fingerprint_changed_from "$fp" t:1
+  _mosaic_op resize-master +10
+  _mosaic_wait_fingerprint_changed_from "$fp" t:1
 
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
-  [ "$(mosaic_t show-option -wqv -t t:1 main-pane-height)" = "60%" ]
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  [ "$(_mosaic_t show-option -wqv -t t:1 main-pane-height)" = "60%" ]
 }
 
 @test "resize-master with nmaster 2 resizes the whole master region" {
   set_nmaster t:1 2
-  for _ in 1 2 3; do mosaic_split; done
+  for _ in 1 2 3; do _mosaic_split; done
 
-  fp=$(mosaic_fingerprint t:1)
+  fp=$(_mosaic_fingerprint t:1)
 
-  mosaic_op resize-master +10
-  mosaic_wait_fingerprint_changed_from "$fp" t:1
+  _mosaic_op resize-master +10
+  _mosaic_wait_fingerprint_changed_from "$fp" t:1
 
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
   pane1_w=$(pane_field t:1 1 4)
   pane2_w=$(pane_field t:1 2 4)
   pane3_w=$(pane_field t:1 3 4)
@@ -258,184 +273,184 @@ assert_orientation_layout() {
 }
 
 @test "resize-master on two windows is independent" {
-  mosaic_split
-  mosaic_t new-window -t t: "sleep 3600"
-  mosaic_use_algorithm master-stack t:2
-  mosaic_t split-window -t t:2 "sleep 3600"
-  mosaic_wait_pane_count 2 t:2
-  mosaic_quiesce
+  _mosaic_split
+  _mosaic_t new-window -t t: "sleep 3600"
+  _mosaic_use_layout master-stack t:2
+  _mosaic_t split-window -t t:2 "sleep 3600"
+  _mosaic_wait_pane_count 2 t:2
+  _mosaic_quiesce
 
-  mosaic_t select-window -t t:1
-  mosaic_op resize-master +20
+  _mosaic_t select-window -t t:1
+  _mosaic_op resize-master +20
 
-  mosaic_t select-window -t t:2
-  mosaic_op resize-master -10
+  _mosaic_t select-window -t t:2
+  _mosaic_op resize-master -10
 
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "70" ]
-  [ "$(mosaic_t show-option -wqv -t t:2 @mosaic-mfact)" = "40" ]
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "70" ]
+  [ "$(_mosaic_t show-option -wqv -t t:2 @mosaic-mfact)" = "40" ]
 }
 
 @test "kill stack pane: hook auto-rebalances stack" {
-  for _ in 1 2 3 4; do mosaic_split; done
-  [ "$(mosaic_pane_count)" = "5" ]
-  mosaic_t kill-pane -t t:1.3
-  mosaic_wait_pane_count_gt 0 t:1.3
-  mosaic_quiesce
-  [ "$(mosaic_pane_count)" = "4" ]
-  pane2_h=$(mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==2{print $2}')
-  pane3_h=$(mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==3{print $2}')
+  for _ in 1 2 3 4; do _mosaic_split; done
+  [ "$(_mosaic_pane_count)" = "5" ]
+  _mosaic_t kill-pane -t t:1.3
+  _mosaic_wait_pane_count_gt 0 t:1.3
+  _mosaic_quiesce
+  [ "$(_mosaic_pane_count)" = "4" ]
+  pane2_h=$(_mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==2{print $2}')
+  pane3_h=$(_mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==3{print $2}')
   diff=$((pane2_h - pane3_h))
   [ "${diff#-}" -le 1 ]
 }
 
 @test "kill master: stack-top promoted via renumber + relayout" {
-  for _ in 1 2; do mosaic_split; done
-  [ "$(mosaic_pane_count)" = "3" ]
-  stack_top=$(mosaic_pane_id_at t:1.2)
-  mosaic_t kill-pane -t t:1.1
-  mosaic_wait_pane_count_gt 0 t:1.1
-  mosaic_quiesce
-  [ "$(mosaic_pane_count)" = "2" ]
-  [ "$(mosaic_pane_id_at t:1.1)" = "$stack_top" ]
-  layout=$(mosaic_layout)
+  for _ in 1 2; do _mosaic_split; done
+  [ "$(_mosaic_pane_count)" = "3" ]
+  stack_top=$(_mosaic_pane_id_at t:1.2)
+  _mosaic_t kill-pane -t t:1.1
+  _mosaic_wait_pane_count_gt 0 t:1.1
+  _mosaic_quiesce
+  [ "$(_mosaic_pane_count)" = "2" ]
+  [ "$(_mosaic_pane_id_at t:1.1)" = "$stack_top" ]
+  layout=$(_mosaic_layout)
   [[ "$layout" == *"{"* ]]
 }
 
 @test "disabled window: splits do NOT retile" {
-  mosaic_clear_algorithm
-  mosaic_split
-  mosaic_split
-  layout=$(mosaic_layout)
-  [[ "$layout" != *"{"* ]] || [ "$(mosaic_pane_count)" -le 1 ]
+  _mosaic_clear_layout
+  _mosaic_split
+  _mosaic_split
+  layout=$(_mosaic_layout)
+  [[ "$layout" != *"{"* ]] || [ "$(_mosaic_pane_count)" -le 1 ]
 }
 
-@test "global algorithm: windows without a local override inherit it" {
-  mosaic_clear_algorithm
-  mosaic_use_global_algorithm master-stack
-  mosaic_split
-  mosaic_op relayout
-  layout=$(mosaic_layout)
+@test "global layout: windows without a local override inherit it" {
+  _mosaic_clear_layout
+  _mosaic_use_global_layout master-stack
+  _mosaic_split
+  _mosaic_op relayout
+  layout=$(_mosaic_layout)
   [[ "$layout" == *"{"* ]]
 }
 
-@test "global algorithm: new windows inherit it" {
-  mosaic_t new-window -t t: "sleep 3600"
-  mosaic_use_global_algorithm master-stack
-  mosaic_split t:2
-  layout=$(mosaic_layout t:2)
+@test "global layout: new windows inherit it" {
+  _mosaic_t new-window -t t: "sleep 3600"
+  _mosaic_use_global_layout master-stack
+  _mosaic_split t:2
+  layout=$(_mosaic_layout t:2)
   [[ "$layout" == *"{"* ]]
 }
 
-@test "window-local algorithm overrides the global default" {
-  mosaic_clear_algorithm
-  mosaic_use_global_algorithm master-stack
-  mosaic_use_algorithm even-vertical
-  mosaic_split
-  mosaic_split
-  layout=$(mosaic_layout)
+@test "window-local layout overrides the global default" {
+  _mosaic_clear_layout
+  _mosaic_use_global_layout master-stack
+  _mosaic_use_layout even-vertical
+  _mosaic_split
+  _mosaic_split
+  layout=$(_mosaic_layout)
   [[ "$layout" == *"["* ]]
   [[ "$layout" != *"{"* ]]
 }
 
 @test "window-local off disables the global default" {
-  mosaic_clear_algorithm
-  mosaic_use_global_algorithm master-stack
-  mosaic_disable_algorithm
-  mosaic_split
-  mosaic_split
-  layout=$(mosaic_layout)
-  [[ "$layout" != *"{"* ]] || [ "$(mosaic_pane_count)" -le 1 ]
+  _mosaic_clear_layout
+  _mosaic_use_global_layout master-stack
+  _mosaic_disable_layout
+  _mosaic_split
+  _mosaic_split
+  layout=$(_mosaic_layout)
+  [[ "$layout" != *"{"* ]] || [ "$(_mosaic_pane_count)" -le 1 ]
 }
 
 @test "toggle: clears the current window layout when no global default exists" {
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" = "master-stack" ]
-  mosaic_op toggle
-  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-layout)" = "master-stack" ]
+  _mosaic_op toggle
+  [ -z "$(_mosaic_t show-option -wqv -t t:1 @mosaic-layout)" ]
 }
 
 @test "toggle: window without a layout stays inert" {
-  mosaic_clear_algorithm
-  mosaic_op toggle
-  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
+  _mosaic_clear_layout
+  _mosaic_op toggle
+  [ -z "$(_mosaic_t show-option -wqv -t t:1 @mosaic-layout)" ]
 }
 
 @test "toggle: clearing the window layout disables relayout when no global default exists" {
-  mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "even-vertical"
-  for _ in 1 2; do mosaic_split; done
+  _mosaic_t set-option -wq -t t:1 "@mosaic-layout" "even-vertical"
+  for _ in 1 2; do _mosaic_split; done
 
-  layout=$(mosaic_layout)
+  layout=$(_mosaic_layout)
   [[ "$layout" == *"["* ]]
   [[ "$layout" != *"{"* ]]
 
-  mosaic_op toggle
-  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
+  _mosaic_op toggle
+  [ -z "$(_mosaic_t show-option -wqv -t t:1 @mosaic-layout)" ]
 
-  mosaic_t select-layout -t t:1 even-horizontal
-  mosaic_op relayout
+  _mosaic_t select-layout -t t:1 even-horizontal
+  _mosaic_op relayout
 
-  layout=$(mosaic_layout)
+  layout=$(_mosaic_layout)
   [[ "$layout" == *"{"* ]]
   [[ "$layout" != *"["* ]]
 }
 
 @test "toggle: inherited global layout writes local off" {
-  mosaic_clear_algorithm
-  mosaic_use_global_algorithm master-stack
-  for _ in 1 2; do mosaic_split; done
-  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
+  _mosaic_clear_layout
+  _mosaic_use_global_layout master-stack
+  for _ in 1 2; do _mosaic_split; done
+  [ -z "$(_mosaic_t show-option -wqv -t t:1 @mosaic-layout)" ]
 
-  mosaic_op toggle
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" = "off" ]
+  _mosaic_op toggle
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-layout)" = "off" ]
 
-  mosaic_t select-layout -t t:1 even-vertical
-  mosaic_op relayout
+  _mosaic_t select-layout -t t:1 even-vertical
+  _mosaic_op relayout
 
-  layout=$(mosaic_layout)
-  [[ "$layout" != *"{"* ]] || [ "$(mosaic_pane_count)" -le 1 ]
+  layout=$(_mosaic_layout)
+  [[ "$layout" != *"{"* ]] || [ "$(_mosaic_pane_count)" -le 1 ]
 }
 
 @test "toggle: local off can re-enable the global layout" {
-  mosaic_clear_algorithm
-  mosaic_use_global_algorithm master-stack
-  mosaic_disable_algorithm
-  for _ in 1 2; do mosaic_split; done
+  _mosaic_clear_layout
+  _mosaic_use_global_layout master-stack
+  _mosaic_disable_layout
+  for _ in 1 2; do _mosaic_split; done
 
-  mosaic_op toggle
-  mosaic_wait_option_empty @mosaic-algorithm t:1
-  mosaic_wait_layout_outer '{' t:1
-  [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
+  _mosaic_op toggle
+  _mosaic_wait_option_empty @mosaic-layout t:1
+  _mosaic_wait_layout_outer '{' t:1
+  [ -z "$(_mosaic_t show-option -wqv -t t:1 @mosaic-layout)" ]
 
-  layout=$(mosaic_layout)
+  layout=$(_mosaic_layout)
   [[ "$layout" == *"{"* ]]
 }
 
-@test "unknown algorithm: dispatcher errors cleanly" {
-  mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "nonexistent-algo"
-  run mosaic_exec_direct relayout
+@test "unknown layout: dispatcher errors cleanly" {
+  _mosaic_t set-option -wq -t t:1 "@mosaic-layout" "nonexistent-layout"
+  run _mosaic_exec_direct relayout
   [ "$status" -ne 0 ]
-  [[ "$output" == *"unknown algorithm"* ]]
+  [[ "$output" == *"unknown layout"* ]]
 }
 
 @test "drag-resize: master width survives next split" {
-  mosaic_split
-  mosaic_t resize-pane -t t:1.1 -x 160
-  mosaic_wait_option @mosaic-mfact 80 t:1
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "80" ]
+  _mosaic_split
+  _mosaic_t resize-pane -t t:1.1 -x 160
+  _mosaic_wait_option @mosaic-mfact 80 t:1
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "80" ]
 
-  mosaic_split
-  pane_w=$(mosaic_t list-panes -t t:1 -F '#{pane_index} #{pane_width}' | awk '$1==1{print $2}')
+  _mosaic_split
+  pane_w=$(_mosaic_t list-panes -t t:1 -F '#{pane_index} #{pane_width}' | awk '$1==1{print $2}')
   [ "$pane_w" -ge 158 ]
   [ "$pane_w" -le 161 ]
 }
 
 @test "drag-resize with nmaster 2 syncs mfact from the master region" {
   set_nmaster t:1 2
-  for _ in 1 2; do mosaic_split; done
-  mosaic_t resize-pane -t t:1.1 -x 120
-  mosaic_wait_option @mosaic-mfact 60 t:1
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  for _ in 1 2; do _mosaic_split; done
+  _mosaic_t resize-pane -t t:1.1 -x 120
+  _mosaic_wait_option @mosaic-mfact 60 t:1
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 
-  mosaic_split
+  _mosaic_split
   pane1_w=$(pane_field t:1 1 4)
   pane2_w=$(pane_field t:1 2 4)
   [ "$pane1_w" = "$pane2_w" ]
@@ -444,33 +459,33 @@ assert_orientation_layout() {
 }
 
 @test "drag-resize: zoomed pane does not poison mfact" {
-  mosaic_split
-  mosaic_t resize-pane -t t:1.1 -x 120
-  mosaic_wait_option @mosaic-mfact 60 t:1
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  _mosaic_split
+  _mosaic_t resize-pane -t t:1.1 -x 120
+  _mosaic_wait_option @mosaic-mfact 60 t:1
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 
-  mosaic_t select-pane -t t:1.1
-  mosaic_t resize-pane -Z
-  mosaic_wait_option @mosaic-mfact 60 t:1
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  _mosaic_t select-pane -t t:1.1
+  _mosaic_t resize-pane -Z
+  _mosaic_wait_option @mosaic-mfact 60 t:1
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 
-  mosaic_t resize-pane -Z
-  mosaic_wait_option @mosaic-mfact 60 t:1
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  _mosaic_t resize-pane -Z
+  _mosaic_wait_option @mosaic-mfact 60 t:1
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 }
 
 @test "drag-resize in top orientation syncs mfact from height" {
   set_orientation t:1 top
-  mosaic_split
-  mosaic_t resize-pane -t t:1.1 -y 30
-  mosaic_wait_option_changed_from @mosaic-mfact 50 t:1
+  _mosaic_split
+  _mosaic_t resize-pane -t t:1.1 -y 30
+  _mosaic_wait_option_changed_from @mosaic-mfact 50 t:1
 
-  mfact=$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)
+  mfact=$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)
   [ "$mfact" -ge 55 ]
   [ "$mfact" -le 65 ]
 
-  mosaic_split
-  pane_h=$(mosaic_t list-panes -t t:1 -F '#{pane_index} #{pane_height}' | awk '$1==1 { print $2 }')
+  _mosaic_split
+  pane_h=$(_mosaic_t list-panes -t t:1 -F '#{pane_index} #{pane_height}' | awk '$1==1 { print $2 }')
   [ "$pane_h" -ge 28 ]
   [ "$pane_h" -le 31 ]
 }

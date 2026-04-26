@@ -70,7 +70,7 @@ run-shell ${tmux-mosaic.packages.${system}.default}/share/tmux-plugins/mosaic/mo
 First, make the `master-stack` layout the global default:
 
 ```tmux
-set-option -gwq @mosaic-algorithm master-stack
+set-option -gwq @mosaic-layout master-stack
 ```
 
 Then, configure some keybindings for it:
@@ -85,13 +85,13 @@ bind T     run '#{E:@mosaic-exec} toggle'
 If one window looks better with a `grid` layout, switch just that window:
 
 ```tmux
-bind G     set-option -wq @mosaic-algorithm grid
+bind G     set-option -wq @mosaic-layout grid
 ```
 
 If you change your mind, go back to the global default:
 
 ```tmux
-bind U     set-option -wqu @mosaic-algorithm
+bind U     set-option -wqu @mosaic-layout
 ```
 
 ## Layouts
@@ -123,7 +123,7 @@ chosen axis.
 | ------------------------------ | ------------------------------------------------------------------------- |
 | `toggle`                       | Turn `master-stack` off on the current window.                            |
 | `relayout`                     | Re-apply the current orientation and `@mosaic-mfact`.                     |
-| `promote`                      | Focused pane becomes the primary master. On the primary master, rotate the next pane forward. |
+| `promote`                      | Focused pane becomes the first master. On the first master, rotate the next pane forward. |
 | `resize-master ±N`             | Change the whole master-region size for the current window, clamped to 5–95. |
 | `select-pane -t :.-` (builtin) | Focus the previous pane in stack order.                                   |
 | `select-pane -t :.+` (builtin) | Focus the next pane in stack order.                                       |
@@ -145,7 +145,7 @@ chosen axis.
 ### Example config
 
 ```tmux
-set-option -gwq @mosaic-algorithm master-stack
+set-option -gwq @mosaic-layout master-stack
 set-option -gwq @mosaic-orientation right
 set-option -gwq @mosaic-nmaster 2
 
@@ -153,7 +153,7 @@ bind Enter run '#{E:@mosaic-exec} promote'
 bind -r , run '#{E:@mosaic-exec} resize-master -5'
 bind -r . run '#{E:@mosaic-exec} resize-master +5'
 bind T run '#{E:@mosaic-exec} toggle'
-bind U set-option -wqu @mosaic-algorithm
+bind U set-option -wqu @mosaic-layout
 ```
 
 </details>
@@ -164,11 +164,11 @@ bind U set-option -wqu @mosaic-algorithm
 ### Behavior
 
 This is the shrinking sibling of `spiral`, following the dwm fibonacci
-`dwindle` layout. The first pane gets a primary region on the left sized by
+`dwindle` layout. The first pane gets a master region on the left sized by
 `@mosaic-mfact`, and the remaining panes recurse through the leftover space in
 a steadily shrinking bottom-right pattern. `promote` bubbles the focused pane
-into the primary slot, `resize-master` changes the first split, and
-drag-resizing that primary boundary syncs back into `@mosaic-mfact`.
+into the master slot, `resize-master` changes the first split, and
+drag-resizing that master boundary syncs back into `@mosaic-mfact`.
 
 ### Core actions
 
@@ -176,7 +176,7 @@ drag-resizing that primary boundary syncs back into `@mosaic-mfact`.
 | ------------------------------ | ------------------------------------------------------------------------- |
 | `toggle`                       | Turn `dwindle` off on the current window.                                 |
 | `relayout`                     | Re-apply the current shrinking Fibonacci layout with the current `@mosaic-mfact`. |
-| `promote`                      | Focused pane becomes the primary pane. On the primary pane, rotate the next pane forward. |
+| `promote`                      | Focused pane becomes the master pane. On the master pane, rotate the next pane forward. |
 | `resize-master ±N`             | Change the first split width for the current window, clamped to 5–95.     |
 | `select-pane -t :.-` (builtin) | Focus the previous pane in tmux pane order.                               |
 | `select-pane -t :.+` (builtin) | Focus the next pane in tmux pane order.                                   |
@@ -184,72 +184,24 @@ drag-resizing that primary boundary syncs back into `@mosaic-mfact`.
 | `swap-pane -D` (builtin)       | Move the current pane later in tmux pane order.                           |
 | `split-window` (builtin)       | Add a pane and rebalance the recursive dwindle pattern.                   |
 | `kill-pane` (builtin)          | Remove a pane and rebalance the recursive dwindle pattern.                |
-| `resize-pane` (builtin)        | Resize the primary pane live, then sync the new width back into `@mosaic-mfact`. |
+| `resize-pane` (builtin)        | Resize the master pane live, then sync the new width back into `@mosaic-mfact`. |
 
 ### Relevant options
 
 | Option          | Scope         | Default | Effect                                              |
 | --------------- | ------------- | ------- | --------------------------------------------------- |
-| `@mosaic-mfact` | window→global | `50`    | Stores the primary-split width as a percent         |
+| `@mosaic-mfact` | window→global | `50`    | Stores the master-split width as a percent         |
 | `@mosaic-step`  | global        | `5`     | Used by `resize-master` when you call it without N  |
 
 ### Example config
 
 ```tmux
-bind D set-option -wq @mosaic-algorithm dwindle
+bind D set-option -wq @mosaic-layout dwindle
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r , run '#{E:@mosaic-exec} resize-master -5'
 bind -r . run '#{E:@mosaic-exec} resize-master +5'
 bind T run '#{E:@mosaic-exec} toggle'
-bind U set-option -wqu @mosaic-algorithm
-```
-
-</details>
-
-<details>
-<summary><code>bottom-stack</code> — master above, stack below</summary>
-
-### Behavior
-
-This is the fixed top-master variant of `master-stack`. It keeps the first
-`@mosaic-nmaster` panes in a master strip across the top and the rest in an
-equal-width stack below. `resize-master` changes the height of the whole master
-region, `promote` follows the same primary-master behavior as `master-stack`,
-and drag-resizing the master boundary syncs back into `@mosaic-mfact`.
-
-### Core actions
-
-| Command                        | Behavior                                                                        |
-| ------------------------------ | ------------------------------------------------------------------------------- |
-| `toggle`                       | Turn `bottom-stack` off on the current window.                                  |
-| `relayout`                     | Re-apply the top-master / bottom-stack split and `@mosaic-mfact`.               |
-| `promote`                      | Focused pane becomes the primary master. On the primary master, rotate the next pane forward. |
-| `resize-master ±N`             | Change the whole master-region height for the current window, clamped to 5–95.  |
-| `select-pane -t :.-` (builtin) | Focus the previous pane in stack order.                                         |
-| `select-pane -t :.+` (builtin) | Focus the next pane in stack order.                                             |
-| `swap-pane -U` (builtin)       | Move the current pane up the stack.                                             |
-| `swap-pane -D` (builtin)       | Move the current pane down the stack.                                           |
-| `split-window` (builtin)       | Add a pane and rebalance the top master region plus bottom stack.               |
-| `kill-pane` (builtin)          | Remove a pane and rebalance; killing in the master area pulls the next pane up. |
-| `resize-pane` (builtin)        | Resize the master live, then sync the new height back into `@mosaic-mfact`.     |
-
-### Relevant options
-
-| Option            | Scope         | Default | Effect                                              |
-| ----------------- | ------------- | ------- | --------------------------------------------------- |
-| `@mosaic-nmaster` | window→global | `1`     | Keeps the first N panes in the top master area      |
-| `@mosaic-mfact`   | window→global | `50`    | Stores the master-region height as a percent        |
-| `@mosaic-step`    | global        | `5`     | Used by `resize-master` when you call it without N  |
-
-### Example config
-
-```tmux
-bind B set-option -wq @mosaic-algorithm bottom-stack
-bind Enter run '#{E:@mosaic-exec} promote'
-bind -r , run '#{E:@mosaic-exec} resize-master -5'
-bind -r . run '#{E:@mosaic-exec} resize-master +5'
-bind T run '#{E:@mosaic-exec} toggle'
-bind U set-option -wqu @mosaic-algorithm
+bind U set-option -wqu @mosaic-layout
 ```
 
 </details>
@@ -272,7 +224,7 @@ whole center region, and drag-resizing that boundary syncs back into
 | ------------------------------ | ------------------------------------------------------------------------------- |
 | `toggle`                       | Turn `centered-master` off on the current window.                               |
 | `relayout`                     | Re-apply the centered master column and side stacks with the current `@mosaic-mfact`. |
-| `promote`                      | Focused pane becomes the primary master. On the primary master, rotate the next master forward. |
+| `promote`                      | Focused pane becomes the first master. On the first master, rotate the next master forward. |
 | `resize-master ±N`             | Change the whole center-region width for the current window, clamped to 5–95.   |
 | `select-pane -t :.-` (builtin) | Focus the previous pane in tmux pane order.                                     |
 | `select-pane -t :.+` (builtin) | Focus the next pane in tmux pane order.                                         |
@@ -293,26 +245,26 @@ whole center region, and drag-resizing that boundary syncs back into
 ### Example config
 
 ```tmux
-bind C set-option -wq @mosaic-algorithm centered-master
+bind C set-option -wq @mosaic-layout centered-master
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r , run '#{E:@mosaic-exec} resize-master -5'
 bind -r . run '#{E:@mosaic-exec} resize-master +5'
 bind T run '#{E:@mosaic-exec} toggle'
-bind U set-option -wqu @mosaic-algorithm
+bind U set-option -wqu @mosaic-layout
 ```
 
 </details>
 
 <details>
-<summary><code>three-column</code> — main column plus two slave columns</summary>
+<summary><code>three-column</code> — master column plus two slave columns</summary>
 
 ### Behavior
 
-This is the plain left-main sibling of `centered-master`. It keeps
-`@mosaic-nmaster` panes in a main column on the left and splits the remaining
+This is the plain left-master sibling of `centered-master`. It keeps
+`@mosaic-nmaster` panes in a master column on the left and splits the remaining
 panes into middle and right slave columns. If there is only one stack pane, it
-falls back to main plus right stack; otherwise an odd extra stack pane goes to
-the middle column. `resize-master` changes the width of the whole main region,
+falls back to master plus right stack; otherwise an odd extra stack pane goes to
+the middle column. `resize-master` changes the width of the whole master region,
 and drag-resizing that boundary syncs back into `@mosaic-mfact`.
 
 ### Core actions
@@ -320,34 +272,34 @@ and drag-resizing that boundary syncs back into `@mosaic-mfact`.
 | Command                        | Behavior                                                                        |
 | ------------------------------ | ------------------------------------------------------------------------------- |
 | `toggle`                       | Turn `three-column` off on the current window.                                  |
-| `relayout`                     | Re-apply the left main column and two slave columns with the current `@mosaic-mfact`. |
-| `promote`                      | Focused pane becomes the primary master. On the primary master, rotate the next pane forward. |
-| `resize-master ±N`             | Change the whole main-column width for the current window, clamped to 5–95.     |
+| `relayout`                     | Re-apply the left master column and two slave columns with the current `@mosaic-mfact`. |
+| `promote`                      | Focused pane becomes the first master. On the first master, rotate the next pane forward. |
+| `resize-master ±N`             | Change the whole master-column width for the current window, clamped to 5–95.     |
 | `select-pane -t :.-` (builtin) | Focus the previous pane in tmux pane order.                                     |
 | `select-pane -t :.+` (builtin) | Focus the next pane in tmux pane order.                                         |
 | `swap-pane -U` (builtin)       | Move the current pane earlier in tmux pane order.                               |
 | `swap-pane -D` (builtin)       | Move the current pane later in tmux pane order.                                 |
-| `split-window` (builtin)       | Add a pane and rebalance the main column plus both slave columns.               |
+| `split-window` (builtin)       | Add a pane and rebalance the master column plus both slave columns.               |
 | `kill-pane` (builtin)          | Remove a pane and rebalance the three-column layout.                            |
-| `resize-pane` (builtin)        | Resize the main column live, then sync the new width back into `@mosaic-mfact`. |
+| `resize-pane` (builtin)        | Resize the master column live, then sync the new width back into `@mosaic-mfact`. |
 
 ### Relevant options
 
 | Option            | Scope         | Default | Effect                                              |
 | ----------------- | ------------- | ------- | --------------------------------------------------- |
-| `@mosaic-nmaster` | window→global | `1`     | Keeps N panes in the left main column               |
-| `@mosaic-mfact`   | window→global | `50`    | Stores the main-region width as a percent           |
+| `@mosaic-nmaster` | window→global | `1`     | Keeps N panes in the left master column               |
+| `@mosaic-mfact`   | window→global | `50`    | Stores the master-region width as a percent           |
 | `@mosaic-step`    | global        | `5`     | Used by `resize-master` when you call it without N  |
 
 ### Example config
 
 ```tmux
-bind 3 set-option -wq @mosaic-algorithm three-column
+bind 3 set-option -wq @mosaic-layout three-column
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r , run '#{E:@mosaic-exec} resize-master -5'
 bind -r . run '#{E:@mosaic-exec} resize-master +5'
 bind T run '#{E:@mosaic-exec} toggle'
-bind U set-option -wqu @mosaic-algorithm
+bind U set-option -wqu @mosaic-layout
 ```
 
 </details>
@@ -357,11 +309,11 @@ bind U set-option -wqu @mosaic-algorithm
 
 ### Behavior
 
-This follows the dwm fibonacci `spiral` layout. The first pane gets a primary
+This follows the dwm fibonacci `spiral` layout. The first pane gets a master
 region on the left sized by `@mosaic-mfact`, and the remaining panes recurse
 through the leftover space in a clockwise spiral. `promote` bubbles the focused
-pane into the primary slot, `resize-master` changes the first split, and
-drag-resizing that primary boundary syncs back into `@mosaic-mfact`.
+pane into the master slot, `resize-master` changes the first split, and
+drag-resizing that master boundary syncs back into `@mosaic-mfact`.
 
 ### Core actions
 
@@ -369,7 +321,7 @@ drag-resizing that primary boundary syncs back into `@mosaic-mfact`.
 | ------------------------------ | ----------------------------------------------------------------------- |
 | `toggle`                       | Turn `spiral` off on the current window.                                |
 | `relayout`                     | Re-apply the current Fibonacci spiral with the current `@mosaic-mfact`. |
-| `promote`                      | Focused pane becomes the primary pane. On the primary pane, rotate the next pane forward. |
+| `promote`                      | Focused pane becomes the master pane. On the master pane, rotate the next pane forward. |
 | `resize-master ±N`             | Change the first split width for the current window, clamped to 5–95.   |
 | `select-pane -t :.-` (builtin) | Focus the previous pane in tmux pane order.                             |
 | `select-pane -t :.+` (builtin) | Focus the next pane in tmux pane order.                                 |
@@ -377,24 +329,24 @@ drag-resizing that primary boundary syncs back into `@mosaic-mfact`.
 | `swap-pane -D` (builtin)       | Move the current pane later in tmux pane order.                         |
 | `split-window` (builtin)       | Add a pane and rebalance the recursive spiral.                          |
 | `kill-pane` (builtin)          | Remove a pane and rebalance the recursive spiral.                       |
-| `resize-pane` (builtin)        | Resize the primary pane live, then sync the new width back into `@mosaic-mfact`. |
+| `resize-pane` (builtin)        | Resize the master pane live, then sync the new width back into `@mosaic-mfact`. |
 
 ### Relevant options
 
 | Option          | Scope         | Default | Effect                                              |
 | --------------- | ------------- | ------- | --------------------------------------------------- |
-| `@mosaic-mfact` | window→global | `50`    | Stores the primary-split width as a percent         |
+| `@mosaic-mfact` | window→global | `50`    | Stores the master-split width as a percent         |
 | `@mosaic-step`  | global        | `5`     | Used by `resize-master` when you call it without N  |
 
 ### Example config
 
 ```tmux
-bind S set-option -wq @mosaic-algorithm spiral
+bind S set-option -wq @mosaic-layout spiral
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r , run '#{E:@mosaic-exec} resize-master -5'
 bind -r . run '#{E:@mosaic-exec} resize-master +5'
 bind T run '#{E:@mosaic-exec} toggle'
-bind U set-option -wqu @mosaic-algorithm
+bind U set-option -wqu @mosaic-layout
 ```
 
 </details>
@@ -406,7 +358,7 @@ bind U set-option -wqu @mosaic-algorithm
 
 This keeps panes in a single top-to-bottom column with equal heights. While it
 is active, splits and kills re-apply the same column layout. There is no
-primary pane, so `promote` and `resize-master` are not implemented.
+master pane, so `promote` and `resize-master` are not implemented.
 
 ### Preview
 
@@ -428,9 +380,9 @@ primary pane, so `promote` and `resize-master` are not implemented.
 ### Example config
 
 ```tmux
-bind V set-option -wq @mosaic-algorithm even-vertical
+bind V set-option -wq @mosaic-layout even-vertical
 bind T run '#{E:@mosaic-exec} toggle'
-bind U set-option -wqu @mosaic-algorithm
+bind U set-option -wqu @mosaic-layout
 ```
 
 </details>
@@ -441,7 +393,7 @@ bind U set-option -wqu @mosaic-algorithm
 ### Behavior
 
 This keeps panes in a single left-to-right row with equal widths. While it is
-active, splits and kills re-apply the same row layout. There is no primary
+active, splits and kills re-apply the same row layout. There is no master
 pane, so `promote` and `resize-master` are not implemented.
 
 ### Preview
@@ -464,9 +416,9 @@ pane, so `promote` and `resize-master` are not implemented.
 ### Example config
 
 ```tmux
-bind H set-option -wq @mosaic-algorithm even-horizontal
+bind H set-option -wq @mosaic-layout even-horizontal
 bind T run '#{E:@mosaic-exec} toggle'
-bind U set-option -wqu @mosaic-algorithm
+bind U set-option -wqu @mosaic-layout
 ```
 
 </details>
@@ -478,7 +430,7 @@ bind U set-option -wqu @mosaic-algorithm
 
 This uses tmux's `tiled` layout and lets tmux choose the row and column shape
 from the current pane count. With four panes, it becomes a 2x2 grid. There is
-no primary pane, so `promote` and `resize-master` are not implemented.
+no master pane, so `promote` and `resize-master` are not implemented.
 
 ### Preview
 
@@ -500,9 +452,9 @@ no primary pane, so `promote` and `resize-master` are not implemented.
 ### Example config
 
 ```tmux
-bind G set-option -wq @mosaic-algorithm grid
+bind G set-option -wq @mosaic-layout grid
 bind T run '#{E:@mosaic-exec} toggle'
-bind U set-option -wqu @mosaic-algorithm
+bind U set-option -wqu @mosaic-layout
 ```
 
 </details>
@@ -515,7 +467,7 @@ bind U set-option -wqu @mosaic-algorithm
 This keeps the focused pane zoomed on windows with more than one pane.
 Splitting the zoomed pane keeps the new pane zoomed, and changing focus
 re-zooms the new active pane because Mosaic relayouts on `after-select-pane`.
-There is no primary pane or master size, so `promote` and `resize-master` are
+There is no master pane or master size, so `promote` and `resize-master` are
 not implemented.
 
 ### Preview
@@ -536,9 +488,9 @@ not implemented.
 ### Example config
 
 ```tmux
-bind Z set-option -wq @mosaic-algorithm monocle
+bind Z set-option -wq @mosaic-layout monocle
 bind T run '#{E:@mosaic-exec} toggle'
-bind U set-option -wqu @mosaic-algorithm
+bind U set-option -wqu @mosaic-layout
 bind n select-pane -t :.+
 bind p select-pane -t :.-
 ```
