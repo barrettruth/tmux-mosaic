@@ -16,6 +16,8 @@ reset_log() { _mosaic_reset_log; }
 relayout_count() { _mosaic_log_relayout_count; }
 sync_count() { _mosaic_log_sync_count; }
 _layout_outer() { _mosaic_layout_outer t:1; }
+show_hook() { _mosaic_t show-hooks -g "${1:?hook required}" 2>/dev/null; }
+mosaic_hook_count() { show_hook "${1:?hook required}" | grep -F -c "$REPO_ROOT/scripts/ops.sh" || true; }
 
 assert_relayout_count() {
   local expected="$1" wait_ms="${2:-5000}"
@@ -32,6 +34,47 @@ assert_relayout_count() {
     } >&2
     return 1
   fi
+}
+
+@test "re-sourcing mosaic.tmux does not duplicate mosaic hooks" {
+  local hook
+  for hook in after-split-window after-kill-pane pane-exited pane-died after-select-pane after-resize-pane after-set-option; do
+    [ "$(mosaic_hook_count "$hook")" -eq 1 ]
+  done
+
+  _mosaic_t run-shell "$REPO_ROOT/mosaic.tmux"
+
+  for hook in after-split-window after-kill-pane pane-exited pane-died after-select-pane after-resize-pane after-set-option; do
+    [ "$(mosaic_hook_count "$hook")" -eq 1 ]
+  done
+}
+
+@test "re-sourcing mosaic.tmux replaces stale mosaic hook paths" {
+  local old
+  old="/tmp/old/tmux-mosaic/scripts/ops.sh"
+  _mosaic_t set-hook -ga after-split-window \
+    "run-shell -b '$old relayout #{window_id}'"
+  _mosaic_t set-hook -ga after-resize-pane \
+    "run-shell -b '$old _sync-state #{window_id}'"
+  _mosaic_t set-hook -ga after-set-option \
+    "if-shell -bF '1' \"run-shell -b '$old _on-set-option #{hook_argument_0} #{window_id}'\""
+
+  _mosaic_t run-shell "$REPO_ROOT/mosaic.tmux"
+
+  run show_hook after-split-window
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"$old"* ]]
+  [ "$(mosaic_hook_count after-split-window)" -eq 1 ]
+
+  run show_hook after-resize-pane
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"$old"* ]]
+  [ "$(mosaic_hook_count after-resize-pane)" -eq 1 ]
+
+  run show_hook after-set-option
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"$old"* ]]
+  [ "$(mosaic_hook_count after-set-option)" -eq 1 ]
 }
 
 @test "after-set-option hook: registered with the layout-option filter" {
