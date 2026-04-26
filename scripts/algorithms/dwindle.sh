@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-algo_fibonacci_variant() { printf '%s\n' "spiral"; }
+algo_fibonacci_variant() { printf '%s\n' "dwindle"; }
 
 algo_relayout() { mosaic_fibonacci_relayout "$@"; }
 algo_toggle() { mosaic_toggle_window algo_relayout; }
