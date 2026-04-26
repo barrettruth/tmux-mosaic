@@ -12,11 +12,26 @@ teardown() {
   mosaic_teardown_server
 }
 
-reset_log() { : >/tmp/tmux-mosaic-test.log; }
-relayout_count() { grep -c '^[^ ]* \[[0-9]*\] relayout:' /tmp/tmux-mosaic-test.log || true; }
-sync_count() { grep -c '^[^ ]* \[[0-9]*\] sync-state:' /tmp/tmux-mosaic-test.log || true; }
-layout_outer() {
-  mosaic_layout t:1 | awk 'match($0, /[\[{]/) { print substr($0, RSTART, 1) }'
+reset_log() { mosaic_reset_log; }
+relayout_count() { mosaic_log_relayout_count; }
+sync_count() { mosaic_log_sync_count; }
+layout_outer() { mosaic_layout_outer t:1; }
+
+assert_relayout_count() {
+  local expected="$1" wait_ms="${2:-1500}"
+  if [[ "$expected" -gt 0 ]]; then
+    mosaic_wait_relayout_count_ge "$expected" "$wait_ms" || true
+  fi
+  mosaic_quiesce
+  local actual
+  actual=$(relayout_count)
+  if [[ "$actual" -ne "$expected" ]]; then
+    {
+      printf 'expected %s relayouts, got %s\nlog:\n' "$expected" "$actual"
+      cat /tmp/tmux-mosaic-test.log
+    } >&2
+    return 1
+  fi
 }
 
 @test "after-set-option hook: registered with the layout-option filter" {
@@ -35,64 +50,61 @@ layout_outer() {
 
   reset_log
   mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "grid"
-  sleep 0.2
+  mosaic_wait_layout_outer '[' t:1 || true
 
   [ "$(layout_outer)" = "[" ]
-  [ "$(relayout_count)" = "1" ]
+  assert_relayout_count 1
 }
 
 @test "after-set-option: set @mosaic-orientation right relayouts to right master" {
   reset_log
   mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "right"
-  sleep 0.2
+  mosaic_wait_pane_left_gt 1 0 || true
 
   pane1_left=$(mosaic_t list-panes -t t:1 -F '#{pane_index} #{pane_left}' | awk '$1 == 1 { print $2 }')
   [ "$pane1_left" -gt 0 ]
-  [ "$(relayout_count)" = "1" ]
+  assert_relayout_count 1
 }
 
 @test "after-set-option: set @mosaic-nmaster 2 relayouts" {
   reset_log
   mosaic_t set-option -wq -t t:1 "@mosaic-nmaster" "2"
-  sleep 0.2
+  mosaic_wait_log_match 'nmaster=2' || true
 
-  [ "$(relayout_count)" = "1" ]
+  assert_relayout_count 1
   grep -q 'nmaster=2' /tmp/tmux-mosaic-test.log
 }
 
 @test "after-set-option: set @mosaic-mfact 70 relayouts" {
   reset_log
   mosaic_t set-option -wq -t t:1 "@mosaic-mfact" "70"
-  sleep 0.2
+  mosaic_wait_option main-pane-width "70%" t:1 || true
 
   [ "$(mosaic_t show-option -wqv -t t:1 main-pane-width)" = "70%" ]
-  [ "$(relayout_count)" = "1" ]
+  assert_relayout_count 1
 }
 
 @test "after-set-option: set @mosaic-debug does NOT relayout" {
   reset_log
   mosaic_t set-option -gq "@mosaic-debug" "0"
   mosaic_t set-option -gq "@mosaic-debug" "1"
-  sleep 0.2
 
-  [ "$(relayout_count)" = "0" ]
+  assert_relayout_count 0
 }
 
 @test "after-set-option: set @mosaic-step does NOT relayout" {
   reset_log
   mosaic_t set-option -gq "@mosaic-step" "10"
-  sleep 0.2
 
-  [ "$(relayout_count)" = "0" ]
+  assert_relayout_count 0
 }
 
 @test "after-set-option: set unrelated tmux option does NOT relayout" {
   reset_log
   mosaic_t set-option -gq "mouse" "on"
   mosaic_t set-option -gq "status-left" "test"
-  sleep 0.2
 
-  [ "$(relayout_count)" = "0" ]
+  assert_relayout_count 0
 }
 
 @test "after-set-option: invalid algorithm name surfaces an error" {
@@ -100,41 +112,43 @@ layout_outer() {
   [ "$status" -eq 0 ]
 
   mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "nonexistent-algo"
-  sleep 0.2
+  mosaic_quiesce
 
   mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "grid"
-  sleep 0.2
+  mosaic_wait_layout_outer '[' t:1 || true
   [ "$(layout_outer)" = "[" ]
 }
 
 @test "no double relayout: resize-master via op fires exactly once" {
   reset_log
+  fp=$(mosaic_fingerprint t:1)
+
   mosaic_op resize-master +10
-  sleep 0.2
+  mosaic_wait_fingerprint_changed_from "$fp" t:1 || true
 
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
-  [ "$(relayout_count)" = "1" ]
+  assert_relayout_count 1
 }
 
 @test "no double relayout: toggle off->on fires exactly once" {
   mosaic_disable_algorithm
-  sleep 0.2
+  mosaic_wait_option_empty @mosaic-_fingerprint t:1 || true
   reset_log
 
   mosaic_use_global_algorithm master-stack
   mosaic_op toggle
-  sleep 0.2
 
-  [ "$(relayout_count)" = "1" ]
+  assert_relayout_count 1
 }
 
 @test "no double relayout: drag-resize sync triggers one relayout" {
   reset_log
   mosaic_t resize-pane -t t:1.1 -x 160
-  sleep 0.3
+  mosaic_wait_log_match 'sync-state:' || true
 
-  [ "$(sync_count)" = "1" ]
-  [ "$(relayout_count)" = "1" ]
+  mosaic_quiesce
+  [ "$(sync_count)" -eq 1 ]
+  [ "$(relayout_count)" -eq 1 ]
 }
 
 @test "after-set-option: set @mosaic-algorithm to off preserves layout" {
@@ -142,89 +156,82 @@ layout_outer() {
 
   reset_log
   mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "off"
-  sleep 0.2
 
+  assert_relayout_count 0
   after=$(mosaic_layout t:1)
   [ "$before" = "$after" ]
-  [ "$(relayout_count)" = "0" ]
 }
 
 @test "after-set-option: unset window option falls back to global" {
   mosaic_use_global_algorithm grid
   mosaic_use_algorithm master-stack t:1
-  sleep 0.2
+  mosaic_wait_layout_outer '{' t:1 || true
   [ "$(layout_outer)" = "{" ]
 
   reset_log
   mosaic_t set-option -wqu -t t:1 "@mosaic-algorithm"
-  sleep 0.2
+  mosaic_wait_layout_outer '[' t:1 || true
 
   [ "$(layout_outer)" = "[" ]
-  [ "$(relayout_count)" = "1" ]
+  assert_relayout_count 1
 }
 
 @test "fingerprint cache: setting @mosaic-mfact to its current value triggers zero relayouts" {
   mosaic_t set-option -wq -t t:1 "@mosaic-mfact" "70"
-  sleep 0.2
+  mosaic_wait_option main-pane-width "70%" t:1 || true
   reset_log
 
   mosaic_t set-option -wq -t t:1 "@mosaic-mfact" "70"
-  sleep 0.2
-
-  [ "$(relayout_count)" = "0" ]
+  assert_relayout_count 0
 }
 
 @test "fingerprint cache: setting @mosaic-orientation to its current value triggers zero relayouts" {
   mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "right"
-  sleep 0.2
+  mosaic_wait_pane_left_gt 1 0 || true
   reset_log
 
   mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "right"
-  sleep 0.2
-
-  [ "$(relayout_count)" = "0" ]
+  assert_relayout_count 0
 }
 
 @test "fingerprint cache: setting @mosaic-algorithm to its current value triggers zero relayouts" {
   reset_log
 
   mosaic_t set-option -wq -t t:1 "@mosaic-algorithm" "master-stack"
-  sleep 0.2
-
-  [ "$(relayout_count)" = "0" ]
+  assert_relayout_count 0
 }
 
 @test "fingerprint cache: two distinct orientation changes fire two relayouts" {
   reset_log
   mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "right"
-  sleep 0.2
+  mosaic_wait_relayout_count_ge 1 || true
   mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "left"
-  sleep 0.2
 
-  [ "$(relayout_count)" = "2" ]
+  assert_relayout_count 2
 }
 
 @test "fingerprint cache: cleared on transition to off so re-enable always relayouts" {
   reset_log
 
   mosaic_disable_algorithm
-  sleep 0.2
+  mosaic_wait_option_empty @mosaic-_fingerprint t:1 || true
   [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-_fingerprint)" ]
 
   mosaic_use_algorithm master-stack
-  sleep 0.2
-  [ "$(relayout_count)" -ge "1" ]
+  mosaic_wait_option_set @mosaic-_fingerprint t:1 || true
   [ -n "$(mosaic_t show-option -wqv -t t:1 @mosaic-_fingerprint)" ]
+  [ "$(relayout_count)" -ge 1 ]
 }
 
 @test "sync short-circuit: drag-resize whose pct is unchanged does not write @mosaic-mfact" {
   mosaic_t set-option -wq -t t:1 "@mosaic-mfact" "50"
-  sleep 0.2
+  mosaic_wait_option main-pane-width "50%" t:1 || true
   reset_log
 
   mosaic_t resize-pane -t t:1.1 -x 100
-  sleep 0.3
+  mosaic_quiesce
+  mosaic_quiesce
 
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "50" ]
-  [ "$(relayout_count)" = "0" ]
+  [ "$(relayout_count)" -eq 0 ]
 }
