@@ -158,6 +158,20 @@ assert_orientation_layout() {
   [ "$pane1_w" = "$pane2_w" ]
 }
 
+@test "nmaster 2 and top orientation keep both masters in the top row" {
+  set_nmaster t:1 2
+  set_orientation t:1 top
+  for _ in 1 2 3; do _mosaic_split; done
+
+  [ "$(pane_field t:1 1 3)" = "0" ]
+  [ "$(pane_field t:1 2 3)" = "0" ]
+  [ "$(pane_field t:1 3 3)" -gt 0 ]
+
+  pane1_w=$(pane_field t:1 1 4)
+  pane2_w=$(pane_field t:1 2 4)
+  [ "$pane1_w" = "$pane2_w" ]
+}
+
 @test "promote from stack: focused pane becomes first master" {
   for _ in 1 2 3; do _mosaic_split; done
   _mosaic_t select-pane -t t:1.3
