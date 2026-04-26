@@ -50,7 +50,7 @@ algo_relayout() {
   mosaic_log "relayout: win=$win n=$n layout=bottom-stack nmaster=$nmaster mfact=$mfact"
 }
 
-algo_toggle() { mosaic_toggle_window algo_relayout; }
+algo_toggle() { mosaic_toggle_window; }
 
 algo_promote() {
   local idx n pbase
@@ -80,7 +80,6 @@ algo_resize_master() {
   [[ "$new" -lt 5 ]] && new=5
   [[ "$new" -gt 95 ]] && new=95
   tmux set-option -wq -t "$win" "@mosaic-mfact" "$new"
-  algo_relayout "$win"
 }
 
 algo_sync_state() {

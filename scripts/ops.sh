@@ -6,27 +6,34 @@ source "$CURRENT_DIR/helpers.sh"
 
 load_algorithm() {
   local algo="$1"
-  if [[ ! "$algo" =~ ^[a-z][a-z0-9-]*$ ]]; then
-    echo "mosaic: invalid algorithm name: $algo" >&2
-    return 1
-  fi
+  [[ "$algo" =~ ^[a-z][a-z0-9-]*$ ]] || return 2
   local file="$CURRENT_DIR/algorithms/$algo.sh"
-  if [[ ! -f "$file" ]]; then
-    echo "mosaic: unknown algorithm: $algo" >&2
-    return 1
-  fi
+  [[ -f "$file" ]] || return 3
   # shellcheck source=algorithms/master-stack.sh
   source "$file"
   return 0
+}
+
+show_load_error() {
+  local rc="$1" algo="$2"
+  case "$rc" in
+  2) mosaic_show_message "mosaic: invalid algorithm name: $algo" ;;
+  3) mosaic_show_message "mosaic: unknown algorithm: $algo" ;;
+  esac
 }
 
 cmd="${1:-}"
 [[ $# -gt 0 ]] && shift
 
 WIN_ARG=""
+CHANGED_OPT=""
 case "$cmd" in
 relayout | _sync-state)
   WIN_ARG="${1:-}"
+  ;;
+_on-set-option)
+  CHANGED_OPT="${1:-}"
+  WIN_ARG="${2:-}"
   ;;
 esac
 
@@ -40,7 +47,7 @@ fi
 
 if [[ -z "$algo" ]]; then
   case "$cmd" in
-  relayout | _sync-state) exit 0 ;;
+  relayout | _sync-state | _on-set-option) exit 0 ;;
   toggle | promote | resize-master)
     mosaic_show_message "mosaic: no layout configured"
     exit 0
@@ -48,7 +55,15 @@ if [[ -z "$algo" ]]; then
   esac
 fi
 
-if ! load_algorithm "$algo"; then
+load_algorithm "$algo"
+load_rc=$?
+if [[ $load_rc -ne 0 ]]; then
+  case "$cmd" in
+  relayout | toggle | promote | resize-master) show_load_error "$load_rc" "$algo" ;;
+  _on-set-option)
+    [[ "$CHANGED_OPT" == "@mosaic-algorithm" ]] && show_load_error "$load_rc" "$algo"
+    ;;
+  esac
   exit 1
 fi
 
@@ -64,7 +79,7 @@ dispatch_optional() {
 }
 
 case "$cmd" in
-relayout) algo_relayout "$target_window" ;;
+relayout | _on-set-option) algo_relayout "$target_window" ;;
 toggle) algo_toggle ;;
 _sync-state)
   if declare -f algo_sync_state >/dev/null; then

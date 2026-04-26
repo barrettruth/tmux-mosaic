@@ -67,6 +67,7 @@ pane_field() {
   for _ in 1 2 3; do mosaic_split; done
 
   mosaic_op resize-master +10
+  sleep 0.2
 
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
   [ "$(mosaic_t show-option -wqv -t t:1 main-pane-height)" = "60%" ]

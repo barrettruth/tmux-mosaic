@@ -13,4 +13,4 @@ algo_relayout() {
   mosaic_log "relayout: win=$win n=$n zoomed=$zoomed"
 }
 
-algo_toggle() { mosaic_toggle_window algo_relayout; }
+algo_toggle() { mosaic_toggle_window; }

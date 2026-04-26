@@ -230,6 +230,7 @@ assert_orientation_layout() {
   mosaic_op relayout
 
   mosaic_op resize-master +10
+  sleep 0.2
 
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
   [ "$(mosaic_t show-option -wqv -t t:1 main-pane-height)" = "60%" ]
@@ -240,6 +241,7 @@ assert_orientation_layout() {
   for _ in 1 2 3; do mosaic_split; done
 
   mosaic_op resize-master +10
+  sleep 0.2
 
   [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
   pane1_w=$(pane_field t:1 1 4)
@@ -392,6 +394,7 @@ assert_orientation_layout() {
   for _ in 1 2; do mosaic_split; done
 
   mosaic_op toggle
+  sleep 0.2
   [ -z "$(mosaic_t show-option -wqv -t t:1 @mosaic-algorithm)" ]
 
   layout=$(mosaic_layout)
