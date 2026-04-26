@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-mosaic_set_defaults() {
+_mosaic_set_defaults() {
   tmux set-option -gwq "@mosaic-orientation" "left"
   tmux set-option -gwq "@mosaic-nmaster" "1"
   tmux set-option -gq "@mosaic-mfact" "50"
@@ -8,8 +8,8 @@ mosaic_set_defaults() {
   tmux set-option -gq "@mosaic-debug" "0"
 }
 
-mosaic_register_hooks() {
-  local exec hook layout_option_filter
+_mosaic_register_hooks() {
+  local exec hook _layout_option_filter
   exec=$(tmux show-option -gqv "@mosaic-exec")
   [[ -z "$exec" ]] && return 0
 
@@ -19,7 +19,7 @@ mosaic_register_hooks() {
   tmux set-hook -ga after-resize-pane \
     "run-shell -b '$exec _sync-state #{window_id}'"
 
-  layout_option_filter='#{||:#{||:#{m:@mosaic-algorithm,#{hook_argument_0}},#{m:@mosaic-orientation,#{hook_argument_0}}},#{||:#{m:@mosaic-nmaster,#{hook_argument_0}},#{m:@mosaic-mfact,#{hook_argument_0}}}}'
+  _layout_option_filter='#{||:#{||:#{m:@mosaic-layout,#{hook_argument_0}},#{m:@mosaic-orientation,#{hook_argument_0}}},#{||:#{m:@mosaic-nmaster,#{hook_argument_0}},#{m:@mosaic-mfact,#{hook_argument_0}}}}'
   tmux set-hook -ga after-set-option \
-    "if-shell -bF '$layout_option_filter' \"run-shell -b '$exec _on-set-option #{hook_argument_0} #{window_id}'\""
+    "if-shell -bF '$_layout_option_filter' \"run-shell -b '$exec _on-set-option #{hook_argument_0} #{window_id}'\""
 }

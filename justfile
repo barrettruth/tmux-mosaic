@@ -7,7 +7,7 @@ format:
     biome format biome.json README.md .github
 
 lint:
-    shellcheck -x --source-path=SCRIPTDIR --source-path=SCRIPTDIR/scripts mosaic.tmux scripts/*.sh scripts/algorithms/*.sh tests/helpers.bash
+    shellcheck -x --source-path=SCRIPTDIR --source-path=SCRIPTDIR/scripts mosaic.tmux scripts/*.sh scripts/layouts/*.sh tests/helpers.bash
 
 test:
     bats tests/integration/*.bats

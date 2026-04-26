@@ -3,28 +3,28 @@
 load '../helpers.bash'
 
 setup() {
-  mosaic_setup_server
-  mosaic_use_algorithm centered-master
+  _mosaic_setup_server
+  _mosaic_use_layout centered-master
 }
 
 teardown() {
-  mosaic_teardown_server
+  _mosaic_teardown_server
 }
 
 set_nmaster() {
-  mosaic_t set-option -wq -t "${1:-t:1}" "@mosaic-nmaster" "${2:?nmaster required}"
+  _mosaic_t set-option -wq -t "${1:-t:1}" "@mosaic-nmaster" "${2:?nmaster required}"
 }
 
 pane_field() {
-  mosaic_t list-panes -t "${1:-t:1}" -F '#{pane_index} #{pane_left} #{pane_top} #{pane_width} #{pane_height}' |
+  _mosaic_t list-panes -t "${1:-t:1}" -F '#{pane_index} #{pane_left} #{pane_top} #{pane_width} #{pane_height}' |
     awk -v idx="${2:?pane index required}" -v field="${3:?field required}" '$1 == idx { print $field }'
 }
 
 @test "centered-master: 3 panes center the master between left and right stacks" {
-  for _ in 1 2; do mosaic_split; done
-  [ "$(mosaic_pane_count)" = "3" ]
+  for _ in 1 2; do _mosaic_split; done
+  [ "$(_mosaic_pane_count)" = "3" ]
 
-  layout=$(mosaic_layout)
+  layout=$(_mosaic_layout)
   [[ "$layout" == *"{"* ]]
 
   [ "$(pane_field t:1 1 2)" = "0" ]
@@ -39,8 +39,8 @@ pane_field() {
 }
 
 @test "centered-master: 4 panes give the extra stack pane to the right" {
-  for _ in 1 2 3; do mosaic_split; done
-  [ "$(mosaic_pane_count)" = "4" ]
+  for _ in 1 2 3; do _mosaic_split; done
+  [ "$(_mosaic_pane_count)" = "4" ]
 
   [ "$(pane_field t:1 1 2)" = "0" ]
   [ "$(pane_field t:1 2 2)" -gt 0 ]
@@ -54,8 +54,8 @@ pane_field() {
 }
 
 @test "centered-master: 5 panes split the side stacks evenly" {
-  for _ in 1 2 3 4; do mosaic_split; done
-  [ "$(mosaic_pane_count)" = "5" ]
+  for _ in 1 2 3 4; do _mosaic_split; done
+  [ "$(_mosaic_pane_count)" = "5" ]
 
   [ "$(pane_field t:1 1 2)" = "0" ]
   [ "$(pane_field t:1 2 2)" = "0" ]
@@ -71,7 +71,7 @@ pane_field() {
 
 @test "centered-master: nmaster 2 keeps both masters in the center column" {
   set_nmaster t:1 2
-  for _ in 1 2 3; do mosaic_split; done
+  for _ in 1 2 3; do _mosaic_split; done
 
   [ "$(pane_field t:1 1 2)" = "0" ]
   [ "$(pane_field t:1 2 2)" -gt 0 ]
@@ -84,39 +84,39 @@ pane_field() {
   [ "${diff#-}" -le 1 ]
 }
 
-@test "centered-master: promote from stack makes the focused pane primary master" {
-  for _ in 1 2 3; do mosaic_split; done
-  mosaic_t select-pane -t t:1.4
-  pid=$(mosaic_t display-message -p -t t:1 '#{pane_id}')
+@test "centered-master: promote from stack makes the focused pane the first master" {
+  for _ in 1 2 3; do _mosaic_split; done
+  _mosaic_t select-pane -t t:1.4
+  pid=$(_mosaic_t display-message -p -t t:1 '#{pane_id}')
 
-  mosaic_op promote
+  _mosaic_op promote
 
-  [ "$(mosaic_pane_index)" = "2" ]
-  [ "$(mosaic_pane_id_at t:1.2)" = "$pid" ]
+  [ "$(_mosaic_pane_index)" = "2" ]
+  [ "$(_mosaic_pane_id_at t:1.2)" = "$pid" ]
 }
 
-@test "centered-master: promote on primary master with nmaster 2 rotates the next master forward" {
+@test "centered-master: promote on first master with nmaster 2 rotates the next master forward" {
   set_nmaster t:1 2
-  for _ in 1 2 3; do mosaic_split; done
-  master1_pid=$(mosaic_pane_id_at t:1.2)
-  master2_pid=$(mosaic_pane_id_at t:1.3)
-  mosaic_t select-pane -t t:1.2
+  for _ in 1 2 3; do _mosaic_split; done
+  master1_pid=$(_mosaic_pane_id_at t:1.2)
+  master2_pid=$(_mosaic_pane_id_at t:1.3)
+  _mosaic_t select-pane -t t:1.2
 
-  mosaic_op promote
+  _mosaic_op promote
 
-  [ "$(mosaic_pane_id_at t:1.2)" = "$master2_pid" ]
-  [ "$(mosaic_pane_id_at t:1.3)" = "$master1_pid" ]
+  [ "$(_mosaic_pane_id_at t:1.2)" = "$master2_pid" ]
+  [ "$(_mosaic_pane_id_at t:1.3)" = "$master1_pid" ]
 }
 
 @test "centered-master: resize-master changes the center width" {
-  for _ in 1 2 3; do mosaic_split; done
+  for _ in 1 2 3; do _mosaic_split; done
 
-  fp=$(mosaic_fingerprint t:1)
+  fp=$(_mosaic_fingerprint t:1)
 
-  mosaic_op resize-master +10
-  mosaic_wait_fingerprint_changed_from "$fp" t:1 || true
+  _mosaic_op resize-master +10
+  _mosaic_wait_fingerprint_changed_from "$fp" t:1 || true
 
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
   pane2_w=$(pane_field t:1 2 4)
   pane1_w=$(pane_field t:1 1 4)
   [ "$pane2_w" -ge 118 ]
@@ -125,14 +125,14 @@ pane_field() {
 }
 
 @test "centered-master: kill-pane keeps the master centered on relayout" {
-  for _ in 1 2 3 4; do mosaic_split; done
-  [ "$(mosaic_pane_count)" = "5" ]
+  for _ in 1 2 3 4; do _mosaic_split; done
+  [ "$(_mosaic_pane_count)" = "5" ]
 
-  mosaic_t kill-pane -t t:1.4
-  mosaic_wait_pane_count_gt 0 t:1.4 || true
-  mosaic_quiesce
+  _mosaic_t kill-pane -t t:1.4
+  _mosaic_wait_pane_count_gt 0 t:1.4 || true
+  _mosaic_quiesce
 
-  [ "$(mosaic_pane_count)" = "4" ]
+  [ "$(_mosaic_pane_count)" = "4" ]
   [ "$(pane_field t:1 1 2)" = "0" ]
   [ "$(pane_field t:1 2 2)" -gt 0 ]
   [ "$(pane_field t:1 3 2)" -gt "$(pane_field t:1 2 2)" ]
@@ -140,12 +140,12 @@ pane_field() {
 }
 
 @test "centered-master: drag-resize syncs mfact from the center width" {
-  for _ in 1 2; do mosaic_split; done
-  mosaic_t resize-pane -t t:1.2 -x 120
-  mosaic_wait_option @mosaic-mfact 60 t:1 || true
-  [ "$(mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  for _ in 1 2; do _mosaic_split; done
+  _mosaic_t resize-pane -t t:1.2 -x 120
+  _mosaic_wait_option @mosaic-mfact 60 t:1 || true
+  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
 
-  mosaic_split
+  _mosaic_split
   pane2_w=$(pane_field t:1 2 4)
   [ "$pane2_w" -ge 118 ]
   [ "$pane2_w" -le 121 ]

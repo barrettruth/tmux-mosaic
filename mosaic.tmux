@@ -9,5 +9,5 @@ source "$CURRENT_DIR/scripts/defaults.sh"
 
 tmux set-option -gq "@mosaic-exec" "$CURRENT_DIR/scripts/ops.sh"
 
-mosaic_set_defaults
-mosaic_register_hooks
+_mosaic_set_defaults
+_mosaic_register_hooks
