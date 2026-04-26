@@ -51,6 +51,55 @@ run-shell ${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/tmux-mosaic/mosaic.t
 </details>
 
 <details>
+<summary><code>centered-master</code> — center master with side stacks</summary>
+
+### Behavior
+
+This keeps `@mosaic-nmaster` panes in a center column and splits the remaining
+panes into left and right stacks. If there is only one stack pane, it falls
+back to master plus right stack; otherwise the master stays centered, and an odd
+extra stack pane goes to the right. `resize-master` changes the width of the
+whole center region, and drag-resizing that boundary syncs back into
+`@mosaic-mfact`.
+
+### Core actions
+
+| Command                        | Behavior                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------- |
+| `toggle`                       | Turn `centered-master` off on the current window.                               |
+| `relayout`                     | Re-apply the centered master column and side stacks with the current `@mosaic-mfact`. |
+| `promote`                      | Focused pane becomes the primary master. On the primary master, rotate the next master forward. |
+| `resize-master ±N`             | Change the whole center-region width for the current window, clamped to 5–95.   |
+| `select-pane -t :.-` (builtin) | Focus the previous pane in tmux pane order.                                     |
+| `select-pane -t :.+` (builtin) | Focus the next pane in tmux pane order.                                         |
+| `swap-pane -U` (builtin)       | Move the current pane earlier in tmux pane order.                               |
+| `swap-pane -D` (builtin)       | Move the current pane later in tmux pane order.                                 |
+| `split-window` (builtin)       | Add a pane and rebalance the center column plus both side stacks.               |
+| `kill-pane` (builtin)          | Remove a pane and rebalance the centered layout.                                |
+| `resize-pane` (builtin)        | Resize the center column live, then sync the new width back into `@mosaic-mfact`. |
+
+### Relevant options
+
+| Option            | Scope         | Default | Effect                                              |
+| ----------------- | ------------- | ------- | --------------------------------------------------- |
+| `@mosaic-nmaster` | window→global | `1`     | Keeps N panes in the center master column           |
+| `@mosaic-mfact`   | window→global | `50`    | Stores the center-region width as a percent         |
+| `@mosaic-step`    | global        | `5`     | Used by `resize-master` when you call it without N  |
+
+### Example config
+
+```tmux
+bind C set-option -wq @mosaic-algorithm centered-master
+bind Enter run '#{E:@mosaic-exec} promote'
+bind -r , run '#{E:@mosaic-exec} resize-master -5'
+bind -r . run '#{E:@mosaic-exec} resize-master +5'
+bind T run '#{E:@mosaic-exec} toggle'
+bind U set-option -wqu @mosaic-algorithm
+```
+
+</details>
+
+<details>
 <summary>Nix</summary>
 
 ### Nix
