@@ -134,25 +134,6 @@ algo_apply_layout() {
   tmux select-layout -t "$win" "$(algo_layout_checksum "$body"),$body" 2>/dev/null || true
 }
 
-algo_swap_keep_focus() {
-  local pid
-  pid=$(tmux display-message -p '#{pane_id}')
-  tmux swap-pane "$@"
-  tmux select-pane -t "$pid"
-}
-
-algo_bubble_keep_focus() {
-  local from="$1" to="$2"
-  while [[ "$from" -gt "$to" ]]; do
-    algo_swap_keep_focus -s ":.$from" -t ":.$((from - 1))"
-    from=$((from - 1))
-  done
-  while [[ "$from" -lt "$to" ]]; do
-    algo_swap_keep_focus -s ":.$from" -t ":.$((from + 1))"
-    from=$((from + 1))
-  done
-}
-
 algo_left_stack_count() {
   local n="$1" nmaster="$2" stack
   stack=$((n - nmaster))
@@ -209,13 +190,13 @@ algo_promote() {
 
   if [[ "$idx" -eq "$master_base" ]]; then
     if [[ "$nmaster" -gt 1 ]]; then
-      algo_swap_keep_focus -s ":.$master_base" -t ":.$((master_base + 1))"
+      mosaic_swap_keep_focus -s ":.$master_base" -t ":.$((master_base + 1))"
     else
       stack_top=$(algo_stack_top "$n" "$nmaster" "$pbase" "$master_base")
-      [[ "$stack_top" -ne "$master_base" ]] && algo_swap_keep_focus -s ":.$master_base" -t ":.$stack_top"
+      [[ "$stack_top" -ne "$master_base" ]] && mosaic_swap_keep_focus -s ":.$master_base" -t ":.$stack_top"
     fi
   else
-    algo_bubble_keep_focus "$idx" "$master_base"
+    mosaic_bubble_keep_focus "$idx" "$master_base"
   fi
   algo_relayout
 }
