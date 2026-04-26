@@ -142,7 +142,7 @@ mosaic_can_relayout_window() {
 }
 
 mosaic_toggle_window() {
-  local relayout_fn="${1:-}" win local_algo global_algo
+  local win local_algo global_algo
   win=$(mosaic_current_window)
   local_algo=$(mosaic_local_algorithm "$win")
   global_algo=$(mosaic_global_algorithm)
@@ -151,7 +151,6 @@ mosaic_toggle_window() {
     if [[ -n "$global_algo" && "$global_algo" != "off" ]]; then
       tmux set-option -wqu -t "$win" "@mosaic-algorithm" 2>/dev/null
       mosaic_show_message "mosaic: on"
-      [[ -n "$relayout_fn" ]] && "$relayout_fn" "$win"
     else
       mosaic_show_message "mosaic: no layout configured"
     fi
@@ -419,7 +418,6 @@ mosaic_fibonacci_resize_master() {
   [[ "$new" -lt 5 ]] && new=5
   [[ "$new" -gt 95 ]] && new=95
   tmux set-option -wq -t "$win" "@mosaic-mfact" "$new"
-  mosaic_fibonacci_relayout "$win"
 }
 
 mosaic_fibonacci_sync_state() {

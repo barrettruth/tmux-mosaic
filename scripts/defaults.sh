@@ -9,7 +9,7 @@ mosaic_set_defaults() {
 }
 
 mosaic_register_hooks() {
-  local exec hook
+  local exec hook layout_option_filter
   exec=$(tmux show-option -gqv "@mosaic-exec")
   [[ -z "$exec" ]] && return 0
 
@@ -18,4 +18,8 @@ mosaic_register_hooks() {
   done
   tmux set-hook -ga after-resize-pane \
     "run-shell -b '$exec _sync-state #{window_id}'"
+
+  layout_option_filter='#{||:#{||:#{m:@mosaic-algorithm,#{hook_argument_0}},#{m:@mosaic-orientation,#{hook_argument_0}}},#{||:#{m:@mosaic-nmaster,#{hook_argument_0}},#{m:@mosaic-mfact,#{hook_argument_0}}}}'
+  tmux set-hook -ga after-set-option \
+    "if-shell -bF '$layout_option_filter' \"run-shell -b '$exec _on-set-option #{hook_argument_0} #{window_id}'\""
 }
