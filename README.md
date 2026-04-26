@@ -11,11 +11,6 @@ A tmux plugin that adds tiling layouts (master-stack, grid, monocle, etc.) with 
 
 ## Installation
 
-`tmux-mosaic` supports TPM, manual, and nix installs. It requires tmux 3.2+.
-
-Mosaic installs no default keybindings. It sets `@mosaic-exec` so your own
-bindings work across install methods.
-
 <details>
 <summary>TPM</summary>
 
