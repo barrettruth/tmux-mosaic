@@ -96,92 +96,6 @@ If you change your mind, go back to the global default:
 bind U     set-option -wqu @mosaic-layout
 ```
 
-## Ownership, auto-apply, and recovery
-
-`@mosaic-layout` is window-scoped: it chooses which Mosaic layout a window uses.
-Pane ownership is separate. When Mosaic first manages a window, it creates an
-ownership generation for that window and stamps the current panes as owned by
-it. A pane stays owned only while its owner generation matches the window's
-current generation, so panes created outside Mosaic or moved in from somewhere
-else stay foreign until you explicitly adopt them.
-
-That separation is what lets Mosaic tell the difference between panes that
-belong to the layout and panes that are only visiting. Windows without a
-resolved layout stay unowned, and panes brought in with raw tmux commands like
-`split-window`, `join-pane`, or `swap-pane` are not silently reclassified
-unless the active policy says to do so.
-
-### Window states
-
-| State       | Meaning                                                      | Result |
-| ----------- | ------------------------------------------------------------ | ------ |
-| `managed`   | Every pane in the window is owned by the current generation. | Mosaic relayouts and syncs normally. |
-| `suspended` | At least one pane in the window is foreign.                  | In `managed` mode, Mosaic pauses structural auto-apply and blocks `new-pane`, `promote`, and `resize-master` until you recover. |
-| unowned     | No layout is resolved for the window yet.                    | Mosaic leaves the window alone. |
-
-### `@mosaic-auto-apply`
-
-`@mosaic-auto-apply` is a window→global option with three modes:
-
-| Value     | Default | Behavior |
-| --------- | ------- | -------- |
-| `full`    | yes     | Adopt all current panes before automatic structural relayout. Raw `split-window` behaves like "this pane belongs to Mosaic". |
-| `managed` | no      | Refresh ownership first. If any foreign pane exists, mark the window `suspended` and skip automatic relayout and size sync. This is the conservative mode for transient helper panes. |
-| `none`    | no      | Do not automatically adopt or relayout on structural hooks. Explicit `new-pane`, `adopt`, and local `@mosaic-layout` changes still work. |
-
-`full` remains the default. If you like the old "every split joins the layout"
-behavior, keep it. If you regularly open temporary log, REPL, git, or scratch
-panes with raw tmux commands, switch to `managed` and use `new-pane` for panes
-that should join Mosaic.
-
-In `managed` mode, a raw `split-window -h` or `split-window -v` creates a
-foreign pane and suspends the window instead of immediately rearranging it. A
-dead foreign pane left behind by `remain-on-exit` also keeps the window
-suspended until you remove it or adopt the current pane set.
-
-### Explicit Mosaic commands
-
-These commands are available through the `#{E:@mosaic-exec}` helper that Mosaic
-sets at load time:
-
-| Command    | Behavior |
-| ---------- | -------- |
-| `toggle`   | Toggle the current window between its resolved layout and `off`. |
-| `relayout` | Re-apply the current layout explicitly. |
-| `new-pane` | Create a new owned pane using tmux's normal split behavior and current path, append it to the end of the layout's pane order, and relayout once. |
-| `adopt`    | Rotate the window's ownership generation, claim all current panes for the active window, and relayout once. |
-
-While a window is suspended, `adopt` and an explicit local `@mosaic-layout`
-change are the recovery tools. `new-pane`, `promote`, and `resize-master` stop
-with `mosaic: window is suspended; adopt panes first` instead of silently
-absorbing foreign panes.
-
-### Example: conservative managed mode with explicit Mosaic panes
-
-```tmux
-set-option -gwq @mosaic-layout master-stack
-set-option -gwq @mosaic-auto-apply managed
-
-bind Enter run '#{E:@mosaic-exec} promote'
-bind -r , run '#{E:@mosaic-exec} resize-master -5'
-bind -r . run '#{E:@mosaic-exec} resize-master +5'
-bind N run '#{E:@mosaic-exec} new-pane'
-bind A run '#{E:@mosaic-exec} adopt'
-bind G set-option -wq @mosaic-layout grid
-```
-
-- Use `N` when you want a pane to join the current Mosaic layout.
-- Use tmux's plain `split-window` for temporary helper panes; in `managed` mode
-  Mosaic leaves those panes foreign and suspends the window instead of adopting
-  them.
-- Close the helper pane to return to `managed`, or press `A` to keep the
-  current pane set and make it the new Mosaic-owned baseline.
-- Press `G` to switch the current window to `grid`; an explicit local layout
-  change also adopts the current panes and clears suspension.
-
-Re-sourcing `mosaic.tmux` keeps the existing ownership state and de-duplicates
-Mosaic's hooks, so reloading your config does not reset a managed window.
-
 ## Layouts
 
 Layouts are the pane arrangements Mosaic can apply. In every supported layout,
@@ -595,6 +509,55 @@ bind p select-pane -t :.-
 ```
 
 </details>
+
+## How it works
+
+`@mosaic-layout` picks a layout for a window. Ownership is separate: when
+Mosaic first manages a window, it stamps the current panes with a
+window-specific generation. Panes created or moved in outside Mosaic stay
+foreign until you adopt them.
+
+### Window state
+
+| State       | Meaning |
+| ----------- | ------- |
+| `managed`   | All panes match the current generation, so Mosaic relayouts and syncs normally. |
+| `suspended` | At least one pane is foreign. In `managed` mode, structural auto-apply stops here. |
+| unowned     | No layout is resolved for the window. |
+
+### `@mosaic-auto-apply`
+
+| Value     | Behavior |
+| --------- | -------- |
+| `full`    | Default. Adopt current panes before structural relayout. Raw `split-window` joins Mosaic. |
+| `managed` | Leave foreign panes foreign. If one appears, mark the window suspended and skip auto-relayout and size sync. |
+| `none`    | Skip structural auto-apply. Explicit `new-pane`, `adopt`, and local `@mosaic-layout` changes still work. |
+
+### Recovery and explicit actions
+
+- `new-pane` creates an owned pane, preserves the current path, appends it to
+  the end of the layout's pane order, and relayouts once.
+- `adopt` rotates the window generation, claims all current panes, and relayouts
+  once.
+- In `managed` mode, raw `split-window` creates a foreign pane and suspends the
+  window. Close it, run `adopt`, or set a new local `@mosaic-layout` to
+  recover.
+- `new-pane`, `promote`, and `resize-master` refuse suspended windows with
+  `mosaic: window is suspended; adopt panes first`.
+- Re-sourcing `mosaic.tmux` keeps ownership state and de-duplicates hooks.
+
+### Example
+
+```tmux
+set-option -gwq @mosaic-layout master-stack
+set-option -gwq @mosaic-auto-apply managed
+
+bind N run '#{E:@mosaic-exec} new-pane'
+bind A run '#{E:@mosaic-exec} adopt'
+```
+
+Use `N` for panes that should join Mosaic. Use plain `split-window` for
+temporary helper panes, then close them or press `A` if you want to keep them.
 
 ## Acknowledgements
 
