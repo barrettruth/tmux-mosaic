@@ -287,6 +287,12 @@ _mosaic_wait_pane_present() {
     bash -c "[ \"\$(tmux -L $(_mosaic_socket) list-panes -t '$target' -F '#{pane_id}' | grep -c '^$pane\$')\" = '1' ]"
 }
 
+_mosaic_wait_pane_dead() {
+  local pane="${1:?pane required}" timeout="${2:-3000}"
+  _mosaic_wait_until "$timeout" \
+    bash -c "[ \"\$(tmux -L $(_mosaic_socket) display-message -p -t '$pane' '#{pane_dead}' 2>/dev/null)\" = '1' ]"
+}
+
 _mosaic_wait_pane_left_gt() {
   local idx="${1:?idx required}" min="${2:?min required}" target="${3:-t:1}" timeout="${4:-3000}"
   _mosaic_wait_until "$timeout" \
