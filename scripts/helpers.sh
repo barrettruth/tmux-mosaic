@@ -387,6 +387,19 @@ _mosaic_new_pane_default() {
   printf '%s\n' "$pane"
 }
 
+_mosaic_new_pane_append() {
+  local win="$1" pane idx pbase n end
+  pane=$(_mosaic_new_pane_default) || return 1
+  idx=$(_mosaic_current_pane_index)
+  pbase=$(_mosaic_current_pane_base)
+  n=$(_mosaic_window_pane_count "$win")
+  end=$((pbase + n - 1))
+  if [[ "$idx" -ne "$end" ]]; then
+    _mosaic_bubble_keep_focus "$idx" "$end"
+  fi
+  printf '%s\n' "$pane"
+}
+
 _mosaic_can_relayout_window() {
   local win="$1" n="$2"
   if ! _mosaic_enabled "$win"; then

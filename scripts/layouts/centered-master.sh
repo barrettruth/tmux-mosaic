@@ -165,6 +165,7 @@ _layout_relayout() {
 }
 
 _layout_toggle() { _mosaic_toggle_window; }
+_layout_new_pane() { _mosaic_new_pane_append "$1"; }
 
 _layout_promote() {
   local idx n win nmaster pbase master_base stack_top
