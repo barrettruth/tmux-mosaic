@@ -108,6 +108,18 @@ _mosaic_layout() {
   _mosaic_t display-message -p -t "${1:-t:1}" '#{window_layout}' | cut -d, -f2-
 }
 
+_mosaic_window_generation() {
+  _mosaic_t show-option -wqv -t "${1:-t:1}" "@mosaic-_generation" 2>/dev/null
+}
+
+_mosaic_window_state() {
+  _mosaic_t show-option -wqv -t "${1:-t:1}" "@mosaic-_state" 2>/dev/null
+}
+
+_mosaic_pane_owner_generation() {
+  _mosaic_t show-option -pqv -t "${1:?pane required}" "@mosaic-_owner-generation" 2>/dev/null
+}
+
 _mosaic_op() {
   local exec
   exec=$(_mosaic_t show-option -gqv "@mosaic-exec")
@@ -211,6 +223,30 @@ _mosaic_wait_option_set() {
   local opt="${1:?opt required}" target="${2:-t:1}" timeout="${3:-3000}"
   _mosaic_wait_until "$timeout" \
     bash -c "[ -n \"\$(tmux -L $(_mosaic_socket) show-option -wqv -t '$target' '$opt' 2>/dev/null)\" ]"
+}
+
+_mosaic_wait_window_generation_set() {
+  local target="${1:-t:1}" timeout="${2:-3000}"
+  _mosaic_wait_until "$timeout" \
+    bash -c "[ -n \"\$(tmux -L $(_mosaic_socket) show-option -wqv -t '$target' '@mosaic-_generation' 2>/dev/null)\" ]"
+}
+
+_mosaic_wait_window_generation_empty() {
+  local target="${1:-t:1}" timeout="${2:-3000}"
+  _mosaic_wait_until "$timeout" \
+    bash -c "[ -z \"\$(tmux -L $(_mosaic_socket) show-option -wqv -t '$target' '@mosaic-_generation' 2>/dev/null)\" ]"
+}
+
+_mosaic_wait_window_state() {
+  local expected="${1-}" target="${2:-t:1}" timeout="${3:-3000}"
+  _mosaic_wait_until "$timeout" \
+    bash -c "[ \"\$(tmux -L $(_mosaic_socket) show-option -wqv -t '$target' '@mosaic-_state' 2>/dev/null)\" = \"$expected\" ]"
+}
+
+_mosaic_wait_pane_owner_generation() {
+  local pane="${1:?pane required}" expected="${2-}" timeout="${3:-3000}"
+  _mosaic_wait_until "$timeout" \
+    bash -c "[ \"\$(tmux -L $(_mosaic_socket) show-option -pqv -t '$pane' '@mosaic-_owner-generation' 2>/dev/null)\" = \"$expected\" ]"
 }
 
 _mosaic_wait_option_changed_from() {

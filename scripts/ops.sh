@@ -48,6 +48,7 @@ fi
 if [[ -z "$layout" ]]; then
   case "$cmd" in
   _on-set-option)
+    _mosaic_window_ownership_clear "$target_window"
     _mosaic_fingerprint_unset "$target_window"
     _mosaic_pending_fingerprint_unset "$target_window"
     exit 0
@@ -71,6 +72,12 @@ if [[ $load_rc -ne 0 ]]; then
   esac
   exit 1
 fi
+
+case "$cmd" in
+relayout | _on-set-option | _sync-state | promote | resize-master)
+  _mosaic_window_bootstrap_ownership "$target_window"
+  ;;
+esac
 
 if [[ "$cmd" == "_on-set-option" ]]; then
   fingerprint=$(_mosaic_compute_fingerprint "$target_window" "$layout")
