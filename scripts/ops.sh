@@ -58,7 +58,7 @@ if [[ -z "$layout" ]]; then
     exit 0
     ;;
   relayout | _sync-state) exit 0 ;;
-  toggle | new-pane | promote | resize-master)
+  toggle | new-pane | adopt | promote | resize-master)
     _mosaic_show_message "mosaic: no layout configured"
     exit 0
     ;;
@@ -69,7 +69,7 @@ load_layout "$layout"
 load_rc=$?
 if [[ $load_rc -ne 0 ]]; then
   case "$cmd" in
-  relayout | toggle | new-pane | promote | resize-master) show_load_error "$load_rc" "$layout" ;;
+  relayout | toggle | new-pane | adopt | promote | resize-master) show_load_error "$load_rc" "$layout" ;;
   _on-set-option)
     [[ "$CHANGED_OPT" == "@mosaic-layout" ]] && show_load_error "$load_rc" "$layout"
     ;;
@@ -78,13 +78,25 @@ if [[ $load_rc -ne 0 ]]; then
 fi
 
 case "$cmd" in
-relayout | _on-set-option | _sync-state | promote | resize-master)
+relayout | _on-set-option | _sync-state | new-pane | adopt | promote | resize-master)
   _mosaic_window_bootstrap_ownership "$target_window"
   ;;
 esac
 
+force_relayout=0
+if [[ "$cmd" == "_on-set-option" && "$CHANGED_OPT" == "@mosaic-layout" && -n "$local_layout" ]]; then
+  if _mosaic_window_has_foreign_panes "$target_window" || ! _mosaic_window_has_owned_panes "$target_window"; then
+    _mosaic_window_adopt_current_panes_refresh "$target_window"
+    force_relayout=1
+  fi
+fi
+
 case "$cmd" in
 relayout | _sync-state)
+  if [[ -n "$(_mosaic_window_structural_guard_get "$target_window")" ]]; then
+    _mosaic_window_structural_guard_unset "$target_window"
+    exit 0
+  fi
   auto_apply=$(_mosaic_auto_apply_for "$target_window")
   case "$auto_apply" in
   none)
@@ -105,7 +117,7 @@ if [[ "$cmd" == "_on-set-option" ]]; then
   fingerprint=$(_mosaic_compute_fingerprint "$target_window" "$layout")
   pending=$(_mosaic_pending_fingerprint_get "$target_window")
   cached="${pending:-$(_mosaic_fingerprint_get "$target_window")}"
-  if [[ -n "$cached" && "$cached" == "$fingerprint" ]]; then
+  if [[ "$force_relayout" != "1" && -n "$cached" && "$cached" == "$fingerprint" ]]; then
     exit 0
   fi
   _mosaic_pending_fingerprint_set "$target_window" "$fingerprint"
@@ -132,7 +144,7 @@ _sync-state)
   ;;
 new-pane)
   if [[ "$(_mosaic_window_state_get "$target_window")" == "suspended" ]]; then
-    _mosaic_show_message "mosaic: window is suspended; adopt panes first"
+    _mosaic_show_suspended_message
     exit 1
   fi
   _mosaic_window_structural_guard_set "$target_window" "$RANDOM-$$"
@@ -152,8 +164,21 @@ new-pane)
   _layout_relayout "$target_window"
   printf '%s\n' "$pane"
   ;;
-promote) dispatch_optional _layout_promote ;;
-resize-master) dispatch_optional _layout_resize_master "$@" ;;
+adopt)
+  _mosaic_window_adopt_current_panes_refresh "$target_window"
+  _layout_relayout "$target_window"
+  ;;
+promote | resize-master)
+  if [[ "$(_mosaic_window_state_get "$target_window")" == "suspended" ]]; then
+    _mosaic_show_suspended_message
+    exit 1
+  fi
+  if [[ "$cmd" == "promote" ]]; then
+    dispatch_optional _layout_promote
+  else
+    dispatch_optional _layout_resize_master "$@"
+  fi
+  ;;
 '')
   echo "usage: $0 <op> [args]" >&2
   exit 1
@@ -165,7 +190,7 @@ resize-master) dispatch_optional _layout_resize_master "$@" ;;
 esac
 
 case "$cmd" in
-relayout | _on-set-option | promote | new-pane)
+relayout | _on-set-option | promote | new-pane | adopt)
   applied_fingerprint=$(_mosaic_compute_fingerprint "$target_window" "$layout")
   _mosaic_fingerprint_set "$target_window" "$applied_fingerprint"
   _mosaic_pending_fingerprint_unset "$target_window"

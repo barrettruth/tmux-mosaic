@@ -187,6 +187,14 @@ _mosaic_window_generation_ensure() {
   printf '%s\n' "$generation"
 }
 
+_mosaic_window_generation_rotate() {
+  local win generation
+  win=$(_mosaic_resolve_window "${1:-}")
+  generation=$(_mosaic_window_generation_new "$win")
+  _mosaic_window_generation_set "$win" "$generation"
+  printf '%s\n' "$generation"
+}
+
 _mosaic_pane_is_owned_by_window() {
   local pane="$1" win generation owner_generation
   win=$(_mosaic_resolve_window "${2:-}")
@@ -234,14 +242,29 @@ _mosaic_window_has_foreign_panes() {
   return 1
 }
 
-_mosaic_window_adopt_current_panes() {
+_mosaic_window_stamp_current_panes() {
   local win generation pane
   win=$(_mosaic_resolve_window "${1:-}")
-  generation=$(_mosaic_window_generation_ensure "$win")
+  generation="${2:?generation required}"
   while IFS= read -r pane; do
     [[ -n "$pane" ]] || continue
     _mosaic_pane_owner_generation_set "$pane" "$generation"
   done < <(_mosaic_window_panes "$win")
+}
+
+_mosaic_window_adopt_current_panes() {
+  local win generation
+  win=$(_mosaic_resolve_window "${1:-}")
+  generation=$(_mosaic_window_generation_ensure "$win")
+  _mosaic_window_stamp_current_panes "$win" "$generation"
+  _mosaic_window_state_set "$win" "managed"
+}
+
+_mosaic_window_adopt_current_panes_refresh() {
+  local win generation
+  win=$(_mosaic_resolve_window "${1:-}")
+  generation=$(_mosaic_window_generation_rotate "$win")
+  _mosaic_window_stamp_current_panes "$win" "$generation"
   _mosaic_window_state_set "$win" "managed"
 }
 
@@ -366,6 +389,10 @@ _mosaic_show_message() {
   else
     printf '%s\n' "$message" >&2
   fi
+}
+
+_mosaic_show_suspended_message() {
+  _mosaic_show_message "mosaic: window is suspended; adopt panes first"
 }
 
 _mosaic_current_pane() { tmux display-message -p '#{pane_id}'; }
