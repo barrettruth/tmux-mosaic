@@ -119,7 +119,7 @@ chosen axis.
 
 ### Preview
 
-![master-stack layout preview](https://github.com/user-attachments/assets/237dea14-ac95-4cff-9acf-f6aba92f690f)
+![master-stack layout preview](https://github.com/user-attachments/assets/df9167e1-8e5b-4260-941d-b036049bd1e3)
 
 ### Core actions
 
@@ -175,6 +175,10 @@ a steadily shrinking bottom-right pattern. `promote` bubbles the focused pane
 into the master slot, `resize-master` changes the first split, and
 drag-resizing that master boundary syncs back into `@mosaic-mfact`.
 
+### Preview
+
+![dwindle layout preview](https://github.com/user-attachments/assets/8b583c94-da5e-4e96-808c-669b3657f820)
+
 ### Core actions
 
 | Command                        | Behavior                                                                  |
@@ -226,7 +230,7 @@ whole center region, and drag-resizing that boundary syncs back into
 
 ### Preview
 
-![centered-master layout preview](https://github.com/user-attachments/assets/63e5413e-f554-42a2-a527-475e98b7b7cb)
+![centered-master layout preview](https://github.com/user-attachments/assets/0950960d-5f4f-4564-ac38-4f9fbdd45436)
 
 ### Core actions
 
@@ -280,7 +284,7 @@ and drag-resizing that boundary syncs back into `@mosaic-mfact`.
 
 ### Preview
 
-![three-column layout preview](https://github.com/user-attachments/assets/8b935d23-6035-4d69-85c5-acc7f4f286df)
+![three-column layout preview](https://github.com/user-attachments/assets/f9bc3aea-6b9f-4b8e-a0c4-38e89c23bd9a)
 
 ### Core actions
 
@@ -333,7 +337,7 @@ drag-resizing that master boundary syncs back into `@mosaic-mfact`.
 
 ### Preview
 
-![spiral layout preview](https://github.com/user-attachments/assets/59fcd046-8325-410c-9307-d4bb49d6c450)
+![spiral layout preview](https://github.com/user-attachments/assets/4fd5f5a8-10fb-46d9-9ef8-d299fb3b90b6)
 
 ### Core actions
 
@@ -383,7 +387,7 @@ master pane, so `promote` and `resize-master` are not implemented.
 
 ### Preview
 
-![even-vertical layout preview](https://github.com/user-attachments/assets/e5a52721-f79b-46af-a778-234428fc7a16)
+![even-vertical layout preview](https://github.com/user-attachments/assets/b6ede77c-547a-4f9a-99c2-924abfa7f12a)
 
 ### Core actions
 
@@ -420,7 +424,7 @@ pane, so `promote` and `resize-master` are not implemented.
 
 ### Preview
 
-![even-horizontal layout preview](https://github.com/user-attachments/assets/842360c6-6551-4f97-9602-45196a2d3cc9)
+![even-horizontal layout preview](https://github.com/user-attachments/assets/7939f8c8-cd37-4718-bd5d-f51936974ab1)
 
 ### Core actions
 
@@ -457,7 +461,7 @@ no master pane, so `promote` and `resize-master` are not implemented.
 
 ### Preview
 
-![grid layout preview](https://github.com/user-attachments/assets/2452e809-cbe4-4b33-82b6-7316915ad33d)
+![grid layout preview](https://github.com/user-attachments/assets/9fd14c83-0c57-4fc7-b90b-a10caf0c4116)
 
 ### Core actions
 
@@ -496,7 +500,7 @@ not implemented.
 
 ### Preview
 
-![monocle layout preview](https://github.com/user-attachments/assets/ec3e9074-f453-41a9-b4dc-c0478d2f134c)
+![monocle layout preview](https://github.com/user-attachments/assets/629c872f-01a4-464b-818f-3ddec143d7cb)
 
 ### Core actions
 
