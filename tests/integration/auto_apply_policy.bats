@@ -31,14 +31,16 @@ last_pane_id() {
 }
 
 @test "auto-apply full: raw split adopts the new pane" {
-  local gen pane
+  local gen pane fp
   _mosaic_t set-option -wq -t t:1 "@mosaic-auto-apply" "full"
   gen=$(_mosaic_window_generation t:1)
+  fp=$(_mosaic_fingerprint t:1)
   reset_log
 
   raw_split t:1
   pane=$(last_pane_id t:1)
 
+  _mosaic_wait_fingerprint_changed_from "$fp" t:1
   _mosaic_wait_pane_owner_generation "$pane" "$gen"
   [ "$(_mosaic_window_state t:1)" = "managed" ]
   [ "$(relayout_count)" -ge 1 ]
