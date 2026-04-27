@@ -96,6 +96,10 @@ _mosaic_pane_id_at() {
   _mosaic_t display-message -p -t "${1:?index required}" '#{pane_id}'
 }
 
+_mosaic_pane_current_path() {
+  _mosaic_t display-message -p -t "${1:?target required}" '#{pane_current_path}'
+}
+
 _mosaic_pane_index() {
   _mosaic_t display-message -p -t "${1:-t:1}" '#{pane_index}'
 }
@@ -275,6 +279,12 @@ _mosaic_wait_pane_count_gt() {
   local min="${1:?min required}" target="${2:-t:1}" timeout="${3:-3000}"
   _mosaic_wait_until "$timeout" \
     bash -c "[ \"\$(tmux -L $(_mosaic_socket) display-message -p -t '$target' '#{window_panes}' 2>/dev/null || echo 0)\" -gt $min ]"
+}
+
+_mosaic_wait_pane_present() {
+  local pane="${1:?pane required}" target="${2:-t:1}" timeout="${3:-3000}"
+  _mosaic_wait_until "$timeout" \
+    bash -c "[ \"\$(tmux -L $(_mosaic_socket) list-panes -t '$target' -F '#{pane_id}' | grep -c '^$pane\$')\" = '1' ]"
 }
 
 _mosaic_wait_pane_left_gt() {

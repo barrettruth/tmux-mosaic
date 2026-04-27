@@ -113,6 +113,19 @@ _mosaic_window_zoomed() {
   tmux display-message -p -t "$(_mosaic_resolve_window "${1:-}")" '#{window_zoomed_flag}'
 }
 
+_mosaic_window_structural_guard_get() {
+  _mosaic_get_w_raw "@mosaic-_structural-guard" "${1:-}"
+}
+
+_mosaic_window_structural_guard_set() {
+  local win="$1" token="$2"
+  tmux set-option -wq -t "$win" "@mosaic-_structural-guard" "$token"
+}
+
+_mosaic_window_structural_guard_unset() {
+  tmux set-option -wqu -t "$1" "@mosaic-_structural-guard" 2>/dev/null
+}
+
 _mosaic_window_generation_get() {
   _mosaic_get_w_raw "@mosaic-_generation" "${1:-}"
 }
@@ -353,6 +366,25 @@ _mosaic_show_message() {
   else
     printf '%s\n' "$message" >&2
   fi
+}
+
+_mosaic_current_pane() { tmux display-message -p '#{pane_id}'; }
+
+_mosaic_current_pane_path() {
+  tmux display-message -p -t "${1:-$(_mosaic_current_pane)}" '#{pane_current_path}'
+}
+
+_mosaic_new_pane_default() {
+  local target_pane current_path pane
+  target_pane=$(_mosaic_current_pane)
+  current_path=$(_mosaic_current_pane_path "$target_pane")
+  if [[ -n "$current_path" ]]; then
+    pane=$(tmux split-window -P -F '#{pane_id}' -t "$target_pane" -c "$current_path")
+  else
+    pane=$(tmux split-window -P -F '#{pane_id}' -t "$target_pane")
+  fi
+  [[ -n "$pane" ]] || return 1
+  printf '%s\n' "$pane"
 }
 
 _mosaic_can_relayout_window() {
