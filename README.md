@@ -148,6 +148,7 @@ purpose or recovering a window after foreign panes appear.
 | ---------- | ------------ |
 | `new-pane` | Creates an owned pane, preserves the current path, appends it to the end of the layout's pane order, and relayouts once. |
 | `adopt`    | Rotates the window generation, claims all current panes, and relayouts once. |
+| `relayout` | Re-applies the current layout to the current window. |
 
 In `managed` mode, a raw `split-window` suspends the window until you close the
 foreign pane, run `adopt`, or set a new local `@mosaic-layout`.
