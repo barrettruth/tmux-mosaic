@@ -79,6 +79,8 @@ Then, configure some keybindings for it:
 bind Enter run '#{E:@mosaic-exec} promote'
 bind -r ,  run '#{E:@mosaic-exec} resize-master -5'
 bind -r .  run '#{E:@mosaic-exec} resize-master +5'
+bind N     run '#{E:@mosaic-exec} new-pane'
+bind A     run '#{E:@mosaic-exec} adopt'
 bind T     run '#{E:@mosaic-exec} toggle'
 ```
 
@@ -94,9 +96,97 @@ If you change your mind, go back to the global default:
 bind U     set-option -wqu @mosaic-layout
 ```
 
+## Ownership, auto-apply, and recovery
+
+`@mosaic-layout` is window-scoped: it chooses which Mosaic layout a window uses.
+Pane ownership is separate. When Mosaic first manages a window, it creates an
+ownership generation for that window and stamps the current panes as owned by
+it. A pane stays owned only while its owner generation matches the window's
+current generation, so panes created outside Mosaic or moved in from somewhere
+else stay foreign until you explicitly adopt them.
+
+That separation is what lets Mosaic tell the difference between panes that
+belong to the layout and panes that are only visiting. Windows without a
+resolved layout stay unowned, and panes brought in with raw tmux commands like
+`split-window`, `join-pane`, or `swap-pane` are not silently reclassified
+unless the active policy says to do so.
+
+### Window states
+
+| State       | Meaning                                                      | Result |
+| ----------- | ------------------------------------------------------------ | ------ |
+| `managed`   | Every pane in the window is owned by the current generation. | Mosaic relayouts and syncs normally. |
+| `suspended` | At least one pane in the window is foreign.                  | In `managed` mode, Mosaic pauses structural auto-apply and blocks `new-pane`, `promote`, and `resize-master` until you recover. |
+| unowned     | No layout is resolved for the window yet.                    | Mosaic leaves the window alone. |
+
+### `@mosaic-auto-apply`
+
+`@mosaic-auto-apply` is a window→global option with three modes:
+
+| Value     | Default | Behavior |
+| --------- | ------- | -------- |
+| `full`    | yes     | Adopt all current panes before automatic structural relayout. Raw `split-window` behaves like "this pane belongs to Mosaic". |
+| `managed` | no      | Refresh ownership first. If any foreign pane exists, mark the window `suspended` and skip automatic relayout and size sync. This is the conservative mode for transient helper panes. |
+| `none`    | no      | Do not automatically adopt or relayout on structural hooks. Explicit `new-pane`, `adopt`, and local `@mosaic-layout` changes still work. |
+
+`full` remains the default. If you like the old "every split joins the layout"
+behavior, keep it. If you regularly open temporary log, REPL, git, or scratch
+panes with raw tmux commands, switch to `managed` and use `new-pane` for panes
+that should join Mosaic.
+
+In `managed` mode, a raw `split-window -h` or `split-window -v` creates a
+foreign pane and suspends the window instead of immediately rearranging it. A
+dead foreign pane left behind by `remain-on-exit` also keeps the window
+suspended until you remove it or adopt the current pane set.
+
+### Explicit Mosaic commands
+
+These commands are available through the `#{E:@mosaic-exec}` helper that Mosaic
+sets at load time:
+
+| Command    | Behavior |
+| ---------- | -------- |
+| `toggle`   | Toggle the current window between its resolved layout and `off`. |
+| `relayout` | Re-apply the current layout explicitly. |
+| `new-pane` | Create a new owned pane using tmux's normal split behavior and current path, append it to the end of the layout's pane order, and relayout once. |
+| `adopt`    | Rotate the window's ownership generation, claim all current panes for the active window, and relayout once. |
+
+While a window is suspended, `adopt` and an explicit local `@mosaic-layout`
+change are the recovery tools. `new-pane`, `promote`, and `resize-master` stop
+with `mosaic: window is suspended; adopt panes first` instead of silently
+absorbing foreign panes.
+
+### Example: conservative managed mode with explicit Mosaic panes
+
+```tmux
+set-option -gwq @mosaic-layout master-stack
+set-option -gwq @mosaic-auto-apply managed
+
+bind Enter run '#{E:@mosaic-exec} promote'
+bind -r , run '#{E:@mosaic-exec} resize-master -5'
+bind -r . run '#{E:@mosaic-exec} resize-master +5'
+bind N run '#{E:@mosaic-exec} new-pane'
+bind A run '#{E:@mosaic-exec} adopt'
+bind G set-option -wq @mosaic-layout grid
+```
+
+- Use `N` when you want a pane to join the current Mosaic layout.
+- Use tmux's plain `split-window` for temporary helper panes; in `managed` mode
+  Mosaic leaves those panes foreign and suspends the window instead of adopting
+  them.
+- Close the helper pane to return to `managed`, or press `A` to keep the
+  current pane set and make it the new Mosaic-owned baseline.
+- Press `G` to switch the current window to `grid`; an explicit local layout
+  change also adopts the current panes and clears suspension.
+
+Re-sourcing `mosaic.tmux` keeps the existing ownership state and de-duplicates
+Mosaic's hooks, so reloading your config does not reset a managed window.
+
 ## Layouts
 
-Layouts are the pane arrangements Mosaic can apply. The following are provided:
+Layouts are the pane arrangements Mosaic can apply. In every supported layout,
+`new-pane` appends to the end of the layout's pane order; the notes below
+describe what that means visually for each layout. The following are provided:
 
 <details>
 <summary><code>master-stack</code> — one or more master panes plus equal-split stack</summary>
@@ -123,6 +213,7 @@ chosen axis.
 | ------------------------------ | ------------------------------------------------------------------------- |
 | `toggle`                       | Turn `master-stack` off on the current window.                            |
 | `relayout`                     | Re-apply the current orientation and `@mosaic-mfact`.                     |
+| `new-pane`                     | Create an owned pane and append it to the end of pane order; with a stack present, it lands at the stack end. |
 | `promote`                      | Focused pane becomes the first master. On the first master, rotate the next pane forward. |
 | `resize-master ±N`             | Change the whole master-region size for the current window, clamped to 5–95. |
 | `select-pane -t :.-` (builtin) | Focus the previous pane in stack order.                                   |
@@ -176,6 +267,7 @@ drag-resizing that master boundary syncs back into `@mosaic-mfact`.
 | ------------------------------ | ------------------------------------------------------------------------- |
 | `toggle`                       | Turn `dwindle` off on the current window.                                 |
 | `relayout`                     | Re-apply the current shrinking Fibonacci layout with the current `@mosaic-mfact`. |
+| `new-pane`                     | Create an owned pane and append it to the end of pane order so it becomes the newest leaf in the dwindle pattern. |
 | `promote`                      | Focused pane becomes the master pane. On the master pane, rotate the next pane forward. |
 | `resize-master ±N`             | Change the first split width for the current window, clamped to 5–95.     |
 | `select-pane -t :.-` (builtin) | Focus the previous pane in tmux pane order.                               |
@@ -224,6 +316,7 @@ whole center region, and drag-resizing that boundary syncs back into
 | ------------------------------ | ------------------------------------------------------------------------------- |
 | `toggle`                       | Turn `centered-master` off on the current window.                               |
 | `relayout`                     | Re-apply the centered master column and side stacks with the current `@mosaic-mfact`. |
+| `new-pane`                     | Create an owned pane and append it to the end of pane order; with side stacks present, it joins them instead of displacing current masters. |
 | `promote`                      | Focused pane becomes the first master. On the first master, rotate the next master forward. |
 | `resize-master ±N`             | Change the whole center-region width for the current window, clamped to 5–95.   |
 | `select-pane -t :.-` (builtin) | Focus the previous pane in tmux pane order.                                     |
@@ -273,6 +366,7 @@ and drag-resizing that boundary syncs back into `@mosaic-mfact`.
 | ------------------------------ | ------------------------------------------------------------------------------- |
 | `toggle`                       | Turn `three-column` off on the current window.                                  |
 | `relayout`                     | Re-apply the left master column and two slave columns with the current `@mosaic-mfact`. |
+| `new-pane`                     | Create an owned pane and append it to the end of pane order; with slave columns present, it joins them instead of displacing current masters. |
 | `promote`                      | Focused pane becomes the first master. On the first master, rotate the next pane forward. |
 | `resize-master ±N`             | Change the whole master-column width for the current window, clamped to 5–95.     |
 | `select-pane -t :.-` (builtin) | Focus the previous pane in tmux pane order.                                     |
@@ -321,6 +415,7 @@ drag-resizing that master boundary syncs back into `@mosaic-mfact`.
 | ------------------------------ | ----------------------------------------------------------------------- |
 | `toggle`                       | Turn `spiral` off on the current window.                                |
 | `relayout`                     | Re-apply the current Fibonacci spiral with the current `@mosaic-mfact`. |
+| `new-pane`                     | Create an owned pane and append it to the end of pane order so it becomes the newest leaf in the spiral pattern. |
 | `promote`                      | Focused pane becomes the master pane. On the master pane, rotate the next pane forward. |
 | `resize-master ±N`             | Change the first split width for the current window, clamped to 5–95.   |
 | `select-pane -t :.-` (builtin) | Focus the previous pane in tmux pane order.                             |
@@ -370,6 +465,7 @@ master pane, so `promote` and `resize-master` are not implemented.
 | -------------------------- | ------------------------------------------------------ |
 | `toggle`                   | Turn `even-vertical` off on the current window.        |
 | `relayout`                 | Re-apply the equal-height column.                      |
+| `new-pane`                 | Create an owned pane and append it to the bottom of the column. |
 | `select-pane -U` (builtin) | Focus the pane above.                                  |
 | `select-pane -D` (builtin) | Focus the pane below.                                  |
 | `swap-pane -U` (builtin)   | Move the current pane toward the top of the column.    |
@@ -406,6 +502,7 @@ pane, so `promote` and `resize-master` are not implemented.
 | -------------------------- | ------------------------------------------------------- |
 | `toggle`                   | Turn `even-horizontal` off on the current window.       |
 | `relayout`                 | Re-apply the equal-width row.                           |
+| `new-pane`                 | Create an owned pane and append it to the right end of the row. |
 | `select-pane -L` (builtin) | Focus the pane on the left.                             |
 | `select-pane -R` (builtin) | Focus the pane on the right.                            |
 | `swap-pane -U` (builtin)   | Move the current pane toward the left side of the row.  |
@@ -442,6 +539,7 @@ no master pane, so `promote` and `resize-master` are not implemented.
 | -------------------------- | -------------------------------------------- |
 | `toggle`                   | Turn `grid` off on the current window.       |
 | `relayout`                 | Re-apply tmux's `tiled` layout.              |
+| `new-pane`                 | Create an owned pane and append it to the end of pane order, then let tmux retile the grid. |
 | `select-pane -L` (builtin) | Focus the pane on the left when one exists.  |
 | `select-pane -R` (builtin) | Focus the pane on the right when one exists. |
 | `select-pane -U` (builtin) | Focus the pane above when one exists.        |
@@ -480,6 +578,7 @@ not implemented.
 | ------------------------------ | ------------------------------------------------------ |
 | `toggle`                       | Turn `monocle` off on the current window.              |
 | `relayout`                     | Re-zoom the active pane.                               |
+| `new-pane`                     | Create an owned pane, append it to the end of pane order, and keep the new pane zoomed. |
 | `select-pane -t :.-` (builtin) | Show the previous pane and keep it zoomed.             |
 | `select-pane -t :.+` (builtin) | Show the next pane and keep it zoomed.                 |
 | `split-window` (builtin)       | Add a pane and keep the new pane zoomed.               |

@@ -247,6 +247,34 @@ _mosaic_wait_window_state() {
     bash -c "[ \"\$(tmux -L $(_mosaic_socket) show-option -wqv -t '$target' '@mosaic-_state' 2>/dev/null)\" = \"$expected\" ]"
 }
 
+_mosaic_wait_window_ownership_cleared() {
+  local target="${1:-t:1}" timeout="${2:-3000}" stable_ms="${3:-100}"
+  local elapsed=0 stable_for=0 ok pane
+  while [[ "$elapsed" -lt "$timeout" ]]; do
+    sleep 0.02
+    elapsed=$((elapsed + 20))
+    ok=1
+    [[ -z "$(_mosaic_window_generation "$target")" ]] || ok=0
+    [[ -z "$(_mosaic_window_state "$target")" ]] || ok=0
+    if [[ "$ok" == "1" ]]; then
+      while IFS= read -r pane; do
+        [[ -n "$pane" ]] || continue
+        if [[ -n "$(_mosaic_pane_owner_generation "$pane")" ]]; then
+          ok=0
+          break
+        fi
+      done < <(_mosaic_t list-panes -t "$target" -F '#{pane_id}')
+    fi
+    if [[ "$ok" == "1" ]]; then
+      stable_for=$((stable_for + 20))
+      [[ "$stable_for" -ge "$stable_ms" ]] && return 0
+    else
+      stable_for=0
+    fi
+  done
+  return 1
+}
+
 _mosaic_wait_pane_owner_generation() {
   local pane="${1:?pane required}" expected="${2-}" timeout="${3:-3000}"
   _mosaic_wait_until "$timeout" \
