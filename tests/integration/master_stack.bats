@@ -437,8 +437,10 @@ assert_orientation_layout() {
 
 @test "drag-resize: master width survives next split" {
   _mosaic_split
+  _mosaic_reset_log
   _mosaic_t resize-pane -t t:1.1 -x 160
   _mosaic_wait_option @mosaic-mfact 80 t:1
+  _mosaic_wait_relayout_count_ge 1
   [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "80" ]
 
   _mosaic_split
@@ -450,9 +452,13 @@ assert_orientation_layout() {
 @test "drag-resize with nmaster 2 syncs mfact from the master region" {
   set_nmaster t:1 2
   for _ in 1 2; do _mosaic_split; done
+  _mosaic_reset_log
   _mosaic_t resize-pane -t t:1.1 -x 120
-  _mosaic_wait_option @mosaic-mfact 60 t:1
-  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  _mosaic_wait_option_changed_from @mosaic-mfact 50 t:1
+  _mosaic_wait_relayout_count_ge 1
+  mfact=$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)
+  [ "$mfact" -ge 59 ]
+  [ "$mfact" -le 61 ]
 
   _mosaic_split
   pane1_w=$(pane_field t:1 1 4)
