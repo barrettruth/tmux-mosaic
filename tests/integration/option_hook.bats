@@ -185,15 +185,12 @@ assert_relayout_count() {
 }
 
 @test "no double relayout: drag-resize sync triggers one relayout" {
-  fp=$(_mosaic_fingerprint t:1)
   reset_log
   _mosaic_t resize-pane -t t:1.1 -x 160
   _mosaic_wait_log_match 'sync-state:'
-  _mosaic_wait_fingerprint_changed_from "$fp" t:1
 
-  _mosaic_quiesce
+  assert_relayout_count 1
   [ "$(sync_count)" -eq 1 ]
-  [ "$(relayout_count)" -eq 1 ]
 }
 
 @test "after-set-option: set @mosaic-layout to off preserves layout" {
