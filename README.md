@@ -224,6 +224,10 @@ extra stack pane goes to the right. `resize-master` changes the width of the
 whole center region, and drag-resizing that boundary syncs back into
 `@mosaic-mfact`.
 
+### Preview
+
+![centered-master layout preview](https://github.com/user-attachments/assets/63e5413e-f554-42a2-a527-475e98b7b7cb)
+
 ### Core actions
 
 | Command                        | Behavior                                                                        |
@@ -274,6 +278,10 @@ falls back to master plus right stack; otherwise an odd extra stack pane goes to
 the middle column. `resize-master` changes the width of the whole master region,
 and drag-resizing that boundary syncs back into `@mosaic-mfact`.
 
+### Preview
+
+![three-column layout preview](https://github.com/user-attachments/assets/8b935d23-6035-4d69-85c5-acc7f4f286df)
+
 ### Core actions
 
 | Command                        | Behavior                                                                        |
@@ -322,6 +330,10 @@ region on the left sized by `@mosaic-mfact`, and the remaining panes recurse
 through the leftover space in a clockwise spiral. `promote` bubbles the focused
 pane into the master slot, `resize-master` changes the first split, and
 drag-resizing that master boundary syncs back into `@mosaic-mfact`.
+
+### Preview
+
+![spiral layout preview](https://github.com/user-attachments/assets/59fcd046-8325-410c-9307-d4bb49d6c450)
 
 ### Core actions
 
