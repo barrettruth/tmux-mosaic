@@ -17,14 +17,18 @@ reset_log() { _mosaic_reset_log; }
 relayout_count() { _mosaic_log_relayout_count; }
 
 @test "new-pane: creates an owned pane without suspending a managed window" {
-  local pane gen
+  local pane gen before before_count
   _mosaic_t set-option -wq -t t:1 "@mosaic-auto-apply" "managed"
   gen=$(_mosaic_window_generation t:1)
   reset_log
+  before=$(_mosaic_pane_ids t:1)
+  before_count=$(_mosaic_pane_count t:1)
 
   run _mosaic_exec_direct new-pane
   [ "$status" -eq 0 ]
-  pane="$output"
+  [ -z "$output" ]
+  _mosaic_wait_pane_count_gt "$before_count" t:1
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
   [[ "$pane" == %* ]]
 
   _mosaic_wait_pane_present "$pane" t:1
@@ -36,12 +40,16 @@ relayout_count() { _mosaic_log_relayout_count; }
 }
 
 @test "new-pane: preserves the current pane path" {
-  local before pane after
+  local before pane after before_panes before_count
   before=$(_mosaic_pane_current_path t:1.1)
+  before_panes=$(_mosaic_pane_ids t:1)
+  before_count=$(_mosaic_pane_count t:1)
 
   run _mosaic_exec_direct new-pane
   [ "$status" -eq 0 ]
-  pane="$output"
+  [ -z "$output" ]
+  _mosaic_wait_pane_count_gt "$before_count" t:1
+  pane=$(_mosaic_new_pane_id_from "$before_panes" t:1)
 
   _mosaic_wait_pane_present "$pane" t:1
   after=$(_mosaic_pane_current_path "$pane")
@@ -49,14 +57,18 @@ relayout_count() { _mosaic_log_relayout_count; }
 }
 
 @test "new-pane: explicit op still works when auto-apply is none" {
-  local pane gen
+  local pane gen before before_count
   _mosaic_t set-option -wq -t t:1 "@mosaic-auto-apply" "none"
   gen=$(_mosaic_window_generation t:1)
   reset_log
+  before=$(_mosaic_pane_ids t:1)
+  before_count=$(_mosaic_pane_count t:1)
 
   run _mosaic_exec_direct new-pane
   [ "$status" -eq 0 ]
-  pane="$output"
+  [ -z "$output" ]
+  _mosaic_wait_pane_count_gt "$before_count" t:1
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
 
   _mosaic_wait_pane_present "$pane" t:1
   _mosaic_wait_pane_owner_generation "$pane" "$gen"

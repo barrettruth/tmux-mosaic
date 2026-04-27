@@ -11,17 +11,21 @@ teardown() {
 }
 
 assert_new_pane_appends_to_end() {
-  local layout="${1:?layout required}" splits="${2:?split count required}" pane
+  local layout="${1:?layout required}" splits="${2:?split count required}" pane before before_count
   _mosaic_use_layout "$layout"
   _mosaic_wait_option_set @mosaic-_fingerprint t:1
   for ((i = 0; i < splits; i++)); do
     _mosaic_split
   done
   _mosaic_t select-pane -t t:1.1
+  before=$(_mosaic_pane_ids t:1)
+  before_count=$(_mosaic_pane_count t:1)
 
   run _mosaic_exec_direct new-pane
   [ "$status" -eq 0 ]
-  pane="$output"
+  [ -z "$output" ]
+  _mosaic_wait_pane_count_gt "$before_count" t:1
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
 
   _mosaic_wait_pane_present "$pane" t:1
   [ "$(last_pane_id)" = "$pane" ]

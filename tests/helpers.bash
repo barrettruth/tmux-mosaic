@@ -146,6 +146,22 @@ _mosaic_panes_summary() {
   _mosaic_t list-panes -t "${1:-t:1}" -F '#{pane_index}:#{pane_id}' | paste -sd' '
 }
 
+_mosaic_pane_ids() {
+  _mosaic_t list-panes -t "${1:-t:1}" -F '#{pane_id}'
+}
+
+_mosaic_new_pane_id_from() {
+  local before="${1-}" target="${2:-t:1}" pane
+  while IFS= read -r pane; do
+    [[ -n "$pane" ]] || continue
+    if ! grep -Fxq "$pane" <<<"$before"; then
+      printf '%s\n' "$pane"
+      return 0
+    fi
+  done < <(_mosaic_pane_ids "$target")
+  return 1
+}
+
 _mosaic_layout_outer() {
   _mosaic_layout "${1:-t:1}" | awk 'match($0, /[\[{]/) { print substr($0, RSTART, 1); exit }'
 }

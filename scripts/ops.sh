@@ -185,7 +185,6 @@ new-pane)
   _mosaic_pane_owner_generation_set "$pane" "$generation"
   _mosaic_window_state_set "$target_window" "managed"
   _layout_relayout "$target_window"
-  printf '%s\n' "$pane"
   ;;
 adopt)
   _mosaic_window_adopt_current_panes_refresh "$target_window"

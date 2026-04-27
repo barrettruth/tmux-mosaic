@@ -83,12 +83,12 @@ Set up some default mappings for adopting panes into the layout, creating owned
 panes, and working the current layout:
 
 ```tmux
-bind Enter run '#{E:@mosaic-exec} promote'
-bind -r ,  run '#{E:@mosaic-exec} resize-master -5'
-bind -r .  run '#{E:@mosaic-exec} resize-master +5'
-bind N     run '#{E:@mosaic-exec} new-pane'
-bind A     run '#{E:@mosaic-exec} adopt'
-bind T     run '#{E:@mosaic-exec} toggle'
+bind Enter run -b '#{E:@mosaic-exec} promote'
+bind -r ,  run -b '#{E:@mosaic-exec} resize-master -5'
+bind -r .  run -b '#{E:@mosaic-exec} resize-master +5'
+bind N     run -b '#{E:@mosaic-exec} new-pane'
+bind A     run -b '#{E:@mosaic-exec} adopt'
+bind T     run -b '#{E:@mosaic-exec} toggle'
 ```
 
 Sometimes another layout works better for your task. Change the current window
@@ -217,10 +217,10 @@ set-option -gwq @mosaic-layout master-stack
 set-option -gwq @mosaic-orientation right
 set-option -gwq @mosaic-nmaster 2
 
-bind Enter run '#{E:@mosaic-exec} promote'
-bind -r , run '#{E:@mosaic-exec} resize-master -5'
-bind -r . run '#{E:@mosaic-exec} resize-master +5'
-bind T run '#{E:@mosaic-exec} toggle'
+bind Enter run -b '#{E:@mosaic-exec} promote'
+bind -r , run -b '#{E:@mosaic-exec} resize-master -5'
+bind -r . run -b '#{E:@mosaic-exec} resize-master +5'
+bind T run -b '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-layout
 ```
 
@@ -271,10 +271,10 @@ whole center region, and drag-resizing that boundary syncs back into
 
 ```tmux
 bind C set-option -wq @mosaic-layout centered-master
-bind Enter run '#{E:@mosaic-exec} promote'
-bind -r , run '#{E:@mosaic-exec} resize-master -5'
-bind -r . run '#{E:@mosaic-exec} resize-master +5'
-bind T run '#{E:@mosaic-exec} toggle'
+bind Enter run -b '#{E:@mosaic-exec} promote'
+bind -r , run -b '#{E:@mosaic-exec} resize-master -5'
+bind -r . run -b '#{E:@mosaic-exec} resize-master +5'
+bind T run -b '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-layout
 ```
 
@@ -325,10 +325,10 @@ and drag-resizing that boundary syncs back into `@mosaic-mfact`.
 
 ```tmux
 bind 3 set-option -wq @mosaic-layout three-column
-bind Enter run '#{E:@mosaic-exec} promote'
-bind -r , run '#{E:@mosaic-exec} resize-master -5'
-bind -r . run '#{E:@mosaic-exec} resize-master +5'
-bind T run '#{E:@mosaic-exec} toggle'
+bind Enter run -b '#{E:@mosaic-exec} promote'
+bind -r , run -b '#{E:@mosaic-exec} resize-master -5'
+bind -r . run -b '#{E:@mosaic-exec} resize-master +5'
+bind T run -b '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-layout
 ```
 
@@ -377,10 +377,10 @@ drag-resizing that master boundary syncs back into `@mosaic-mfact`.
 
 ```tmux
 bind S set-option -wq @mosaic-layout spiral
-bind Enter run '#{E:@mosaic-exec} promote'
-bind -r , run '#{E:@mosaic-exec} resize-master -5'
-bind -r . run '#{E:@mosaic-exec} resize-master +5'
-bind T run '#{E:@mosaic-exec} toggle'
+bind Enter run -b '#{E:@mosaic-exec} promote'
+bind -r , run -b '#{E:@mosaic-exec} resize-master -5'
+bind -r . run -b '#{E:@mosaic-exec} resize-master +5'
+bind T run -b '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-layout
 ```
 
@@ -430,10 +430,10 @@ drag-resizing that master boundary syncs back into `@mosaic-mfact`.
 
 ```tmux
 bind D set-option -wq @mosaic-layout dwindle
-bind Enter run '#{E:@mosaic-exec} promote'
-bind -r , run '#{E:@mosaic-exec} resize-master -5'
-bind -r . run '#{E:@mosaic-exec} resize-master +5'
-bind T run '#{E:@mosaic-exec} toggle'
+bind Enter run -b '#{E:@mosaic-exec} promote'
+bind -r , run -b '#{E:@mosaic-exec} resize-master -5'
+bind -r . run -b '#{E:@mosaic-exec} resize-master +5'
+bind T run -b '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-layout
 ```
 
@@ -470,7 +470,7 @@ master pane, so `promote` and `resize-master` are not implemented.
 
 ```tmux
 bind V set-option -wq @mosaic-layout even-vertical
-bind T run '#{E:@mosaic-exec} toggle'
+bind T run -b '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-layout
 ```
 
@@ -507,7 +507,7 @@ pane, so `promote` and `resize-master` are not implemented.
 
 ```tmux
 bind H set-option -wq @mosaic-layout even-horizontal
-bind T run '#{E:@mosaic-exec} toggle'
+bind T run -b '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-layout
 ```
 
@@ -544,7 +544,7 @@ no master pane, so `promote` and `resize-master` are not implemented.
 
 ```tmux
 bind G set-option -wq @mosaic-layout grid
-bind T run '#{E:@mosaic-exec} toggle'
+bind T run -b '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-layout
 ```
 
@@ -581,7 +581,7 @@ not implemented.
 
 ```tmux
 bind Z set-option -wq @mosaic-layout monocle
-bind T run '#{E:@mosaic-exec} toggle'
+bind T run -b '#{E:@mosaic-exec} toggle'
 bind U set-option -wqu @mosaic-layout
 bind n select-pane -t :.+
 bind p select-pane -t :.-
