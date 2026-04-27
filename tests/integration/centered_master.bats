@@ -127,9 +127,11 @@ pane_field() {
 @test "centered-master: kill-pane keeps the master centered on relayout" {
   for _ in 1 2 3 4; do _mosaic_split; done
   [ "$(_mosaic_pane_count)" = "5" ]
+  fp=$(_mosaic_fingerprint t:1)
 
   _mosaic_t kill-pane -t t:1.4
   _mosaic_wait_pane_count_gt 0 t:1.4
+  _mosaic_wait_fingerprint_changed_from "$fp" t:1
   _mosaic_quiesce
 
   [ "$(_mosaic_pane_count)" = "4" ]

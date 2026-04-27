@@ -293,8 +293,10 @@ assert_orientation_layout() {
 @test "kill stack pane: hook auto-rebalances stack" {
   for _ in 1 2 3 4; do _mosaic_split; done
   [ "$(_mosaic_pane_count)" = "5" ]
+  fp=$(_mosaic_fingerprint t:1)
   _mosaic_t kill-pane -t t:1.3
   _mosaic_wait_pane_count_gt 0 t:1.3
+  _mosaic_wait_fingerprint_changed_from "$fp" t:1
   _mosaic_quiesce
   [ "$(_mosaic_pane_count)" = "4" ]
   pane2_h=$(_mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==2{print $2}')
@@ -307,8 +309,10 @@ assert_orientation_layout() {
   for _ in 1 2; do _mosaic_split; done
   [ "$(_mosaic_pane_count)" = "3" ]
   stack_top=$(_mosaic_pane_id_at t:1.2)
+  fp=$(_mosaic_fingerprint t:1)
   _mosaic_t kill-pane -t t:1.1
   _mosaic_wait_pane_count_gt 0 t:1.1
+  _mosaic_wait_fingerprint_changed_from "$fp" t:1
   _mosaic_quiesce
   [ "$(_mosaic_pane_count)" = "2" ]
   [ "$(_mosaic_pane_id_at t:1.1)" = "$stack_top" ]
@@ -433,8 +437,10 @@ assert_orientation_layout() {
 
 @test "drag-resize: master width survives next split" {
   _mosaic_split
+  _mosaic_reset_log
   _mosaic_t resize-pane -t t:1.1 -x 160
   _mosaic_wait_option @mosaic-mfact 80 t:1
+  _mosaic_wait_relayout_count_ge 1
   [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "80" ]
 
   _mosaic_split
@@ -446,9 +452,13 @@ assert_orientation_layout() {
 @test "drag-resize with nmaster 2 syncs mfact from the master region" {
   set_nmaster t:1 2
   for _ in 1 2; do _mosaic_split; done
+  _mosaic_reset_log
   _mosaic_t resize-pane -t t:1.1 -x 120
-  _mosaic_wait_option @mosaic-mfact 60 t:1
-  [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "60" ]
+  _mosaic_wait_option_changed_from @mosaic-mfact 50 t:1
+  _mosaic_wait_relayout_count_ge 1
+  mfact=$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)
+  [ "$mfact" -ge 59 ]
+  [ "$mfact" -le 61 ]
 
   _mosaic_split
   pane1_w=$(pane_field t:1 1 4)

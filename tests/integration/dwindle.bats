@@ -112,9 +112,11 @@ pane_field() {
 @test "dwindle: kill-pane keeps the recursive shape" {
   for _ in 1 2 3 4 5; do _mosaic_split; done
   [ "$(_mosaic_pane_count)" = "6" ]
+  fp=$(_mosaic_fingerprint t:1)
 
   _mosaic_t kill-pane -t t:1.5
   _mosaic_wait_pane_count_gt 0 t:1.5
+  _mosaic_wait_fingerprint_changed_from "$fp" t:1
   _mosaic_quiesce
 
   [ "$(_mosaic_pane_count)" = "5" ]

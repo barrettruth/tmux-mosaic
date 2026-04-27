@@ -7,6 +7,7 @@ setup() {
   _mosaic_use_layout master-stack
   _mosaic_wait_window_generation_set t:1
   _mosaic_wait_window_state managed t:1
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
 }
 
 teardown() {
