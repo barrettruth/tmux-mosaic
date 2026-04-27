@@ -112,8 +112,7 @@ assert_all_panes_owned() {
   _mosaic_wait_window_state managed t:1
 
   _mosaic_disable_layout
-  _mosaic_wait_window_generation_empty t:1
-  _mosaic_wait_window_state "" t:1
+  _mosaic_wait_window_ownership_cleared t:1
 
   [ -z "$(_mosaic_window_generation t:1)" ]
   [ -z "$(_mosaic_window_state t:1)" ]
