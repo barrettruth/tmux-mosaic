@@ -13,6 +13,7 @@ teardown() {
 assert_new_pane_appends_to_end() {
   local layout="${1:?layout required}" splits="${2:?split count required}" pane
   _mosaic_use_layout "$layout"
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
   for ((i = 0; i < splits; i++)); do
     _mosaic_split
   done

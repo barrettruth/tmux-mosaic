@@ -293,8 +293,10 @@ assert_orientation_layout() {
 @test "kill stack pane: hook auto-rebalances stack" {
   for _ in 1 2 3 4; do _mosaic_split; done
   [ "$(_mosaic_pane_count)" = "5" ]
+  fp=$(_mosaic_fingerprint t:1)
   _mosaic_t kill-pane -t t:1.3
   _mosaic_wait_pane_count_gt 0 t:1.3
+  _mosaic_wait_fingerprint_changed_from "$fp" t:1
   _mosaic_quiesce
   [ "$(_mosaic_pane_count)" = "4" ]
   pane2_h=$(_mosaic_t list-panes -F '#{pane_index} #{pane_height}' | awk '$1==2{print $2}')
@@ -307,8 +309,10 @@ assert_orientation_layout() {
   for _ in 1 2; do _mosaic_split; done
   [ "$(_mosaic_pane_count)" = "3" ]
   stack_top=$(_mosaic_pane_id_at t:1.2)
+  fp=$(_mosaic_fingerprint t:1)
   _mosaic_t kill-pane -t t:1.1
   _mosaic_wait_pane_count_gt 0 t:1.1
+  _mosaic_wait_fingerprint_changed_from "$fp" t:1
   _mosaic_quiesce
   [ "$(_mosaic_pane_count)" = "2" ]
   [ "$(_mosaic_pane_id_at t:1.1)" = "$stack_top" ]

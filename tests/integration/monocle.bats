@@ -5,6 +5,8 @@ load '../helpers.bash'
 setup() {
   _mosaic_setup_server
   _mosaic_t set-option -wq -t t:1 "@mosaic-layout" "monocle"
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  _mosaic_quiesce
 }
 
 teardown() {

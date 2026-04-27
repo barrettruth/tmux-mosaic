@@ -6,14 +6,26 @@ _mosaic_test_id() {
   printf '%s\n' "${BATS_TEST_FILENAME:-}:${BATS_TEST_NAME:-}:${BATS_SUITE_TEST_NUMBER:-${BATS_TEST_NUMBER:-0}}" | cksum | awk '{print $1}'
 }
 
+_mosaic_test_instance_id() {
+  if [[ -n "${BATS_TEST_TMPDIR:-}" ]]; then
+    printf '%s\n' "$BATS_TEST_TMPDIR" | cksum | awk '{print $1}'
+  else
+    _mosaic_test_id
+  fi
+}
+
 _mosaic_socket() {
-  echo "${MOSAIC_TEST_SOCKET:-mosaic-test}-$(_mosaic_test_id)"
+  echo "${MOSAIC_TEST_SOCKET:-mosaic-test}-$(_mosaic_test_instance_id)"
 }
 
 _mosaic_t() { tmux -L "$(_mosaic_socket)" "$@"; }
 
 _mosaic_test_tmpdir() {
-  echo "${TMPDIR:-/tmp}/tmux-mosaic-tests/$(_mosaic_test_id)"
+  if [[ -n "${BATS_TEST_TMPDIR:-}" ]]; then
+    printf '%s\n' "$BATS_TEST_TMPDIR"
+  else
+    echo "${TMPDIR:-/tmp}/tmux-mosaic-tests/$(_mosaic_test_id)"
+  fi
 }
 
 _mosaic_log_file() {
@@ -196,7 +208,7 @@ _mosaic_wait_log_quiet() {
 }
 
 _mosaic_reset_log() {
-  _mosaic_wait_log_quiet 600 100
+  _mosaic_quiesce
   : >"$(_mosaic_log_file)"
 }
 

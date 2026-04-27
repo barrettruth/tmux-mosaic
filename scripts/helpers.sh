@@ -126,6 +126,29 @@ _mosaic_window_structural_guard_unset() {
   tmux set-option -wqu -t "$1" "@mosaic-_structural-guard" 2>/dev/null
 }
 
+_mosaic_window_async_token_get() {
+  _mosaic_get_w_raw "@mosaic-_async-token" "${1:-}"
+}
+
+_mosaic_window_async_token_set() {
+  local win="$1" token="$2"
+  tmux set-option -wq -t "$win" "@mosaic-_async-token" "$token"
+}
+
+_mosaic_window_async_token_issue() {
+  local win token
+  win=$(_mosaic_resolve_window "${1:-}")
+  token="${win}:$(date +%s%N):$$:$RANDOM"
+  _mosaic_window_async_token_set "$win" "$token"
+  printf '%s\n' "$token"
+}
+
+_mosaic_window_async_token_matches() {
+  local win="$1" token="$2"
+  [[ -n "$token" ]] || return 1
+  [[ "$(_mosaic_window_async_token_get "$win")" == "$token" ]]
+}
+
 _mosaic_window_generation_get() {
   _mosaic_get_w_raw "@mosaic-_generation" "${1:-}"
 }
@@ -248,24 +271,58 @@ _mosaic_window_stamp_current_panes() {
   generation="${2:?generation required}"
   while IFS= read -r pane; do
     [[ -n "$pane" ]] || continue
+    if ! _mosaic_window_has_layout "$win"; then
+      _mosaic_window_ownership_clear "$win"
+      return 1
+    fi
     _mosaic_pane_owner_generation_set "$pane" "$generation"
   done < <(_mosaic_window_panes "$win")
+  if ! _mosaic_window_has_layout "$win"; then
+    _mosaic_window_ownership_clear "$win"
+    return 1
+  fi
 }
 
 _mosaic_window_adopt_current_panes() {
   local win generation
   win=$(_mosaic_resolve_window "${1:-}")
+  _mosaic_window_has_layout "$win" || return 1
   generation=$(_mosaic_window_generation_ensure "$win")
-  _mosaic_window_stamp_current_panes "$win" "$generation"
+  if ! _mosaic_window_has_layout "$win"; then
+    _mosaic_window_ownership_clear "$win"
+    return 1
+  fi
+  _mosaic_window_stamp_current_panes "$win" "$generation" || return 1
+  if ! _mosaic_window_has_layout "$win"; then
+    _mosaic_window_ownership_clear "$win"
+    return 1
+  fi
   _mosaic_window_state_set "$win" "managed"
+  if ! _mosaic_window_has_layout "$win"; then
+    _mosaic_window_ownership_clear "$win"
+    return 1
+  fi
 }
 
 _mosaic_window_adopt_current_panes_refresh() {
   local win generation
   win=$(_mosaic_resolve_window "${1:-}")
+  _mosaic_window_has_layout "$win" || return 1
   generation=$(_mosaic_window_generation_rotate "$win")
-  _mosaic_window_stamp_current_panes "$win" "$generation"
+  if ! _mosaic_window_has_layout "$win"; then
+    _mosaic_window_ownership_clear "$win"
+    return 1
+  fi
+  _mosaic_window_stamp_current_panes "$win" "$generation" || return 1
+  if ! _mosaic_window_has_layout "$win"; then
+    _mosaic_window_ownership_clear "$win"
+    return 1
+  fi
   _mosaic_window_state_set "$win" "managed"
+  if ! _mosaic_window_has_layout "$win"; then
+    _mosaic_window_ownership_clear "$win"
+    return 1
+  fi
 }
 
 _mosaic_window_refresh_state() {
