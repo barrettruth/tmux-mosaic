@@ -79,6 +79,24 @@ relayout | _on-set-option | _sync-state | promote | resize-master)
   ;;
 esac
 
+case "$cmd" in
+relayout | _sync-state)
+  auto_apply=$(_mosaic_auto_apply_for "$target_window")
+  case "$auto_apply" in
+  none)
+    exit 0
+    ;;
+  full)
+    _mosaic_window_adopt_current_panes "$target_window"
+    ;;
+  managed)
+    _mosaic_window_refresh_state "$target_window"
+    [[ "$(_mosaic_window_state_get "$target_window")" == "suspended" ]] && exit 0
+    ;;
+  esac
+  ;;
+esac
+
 if [[ "$cmd" == "_on-set-option" ]]; then
   fingerprint=$(_mosaic_compute_fingerprint "$target_window" "$layout")
   pending=$(_mosaic_pending_fingerprint_get "$target_window")

@@ -84,6 +84,20 @@ _mosaic_enabled() {
   _mosaic_window_has_layout "$target"
 }
 
+_mosaic_auto_apply_for() {
+  local target="${1:-}" val
+  val=$(_mosaic_get_w "@mosaic-auto-apply" "full" "$target")
+  case "$val" in
+  full | managed | none)
+    printf '%s\n' "$val"
+    ;;
+  *)
+    _mosaic_log "auto-apply: invalid=$val target=$target defaulting=full"
+    printf '%s\n' "full"
+    ;;
+  esac
+}
+
 _mosaic_current_window() { tmux display-message -p '#{window_id}'; }
 
 _mosaic_resolve_window() {
@@ -187,6 +201,26 @@ _mosaic_window_foreign_panes() {
   done < <(_mosaic_window_panes "$win")
 }
 
+_mosaic_window_has_owned_panes() {
+  local win pane
+  win=$(_mosaic_resolve_window "${1:-}")
+  while IFS= read -r pane; do
+    [[ -n "$pane" ]] || continue
+    return 0
+  done < <(_mosaic_window_owned_panes "$win")
+  return 1
+}
+
+_mosaic_window_has_foreign_panes() {
+  local win pane
+  win=$(_mosaic_resolve_window "${1:-}")
+  while IFS= read -r pane; do
+    [[ -n "$pane" ]] || continue
+    return 0
+  done < <(_mosaic_window_foreign_panes "$win")
+  return 1
+}
+
 _mosaic_window_adopt_current_panes() {
   local win generation pane
   win=$(_mosaic_resolve_window "${1:-}")
@@ -196,6 +230,18 @@ _mosaic_window_adopt_current_panes() {
     _mosaic_pane_owner_generation_set "$pane" "$generation"
   done < <(_mosaic_window_panes "$win")
   _mosaic_window_state_set "$win" "managed"
+}
+
+_mosaic_window_refresh_state() {
+  local win
+  win=$(_mosaic_resolve_window "${1:-}")
+  if _mosaic_window_has_foreign_panes "$win"; then
+    _mosaic_window_state_set "$win" "suspended"
+  elif _mosaic_window_has_owned_panes "$win"; then
+    _mosaic_window_state_set "$win" "managed"
+  else
+    _mosaic_window_state_unset "$win"
+  fi
 }
 
 _mosaic_window_bootstrap_ownership() {
