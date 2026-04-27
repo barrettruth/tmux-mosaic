@@ -99,6 +99,126 @@ _mosaic_window_zoomed() {
   tmux display-message -p -t "$(_mosaic_resolve_window "${1:-}")" '#{window_zoomed_flag}'
 }
 
+_mosaic_window_generation_get() {
+  _mosaic_get_w_raw "@mosaic-_generation" "${1:-}"
+}
+
+_mosaic_window_generation_set() {
+  local win="$1" generation="$2"
+  tmux set-option -wq -t "$win" "@mosaic-_generation" "$generation"
+}
+
+_mosaic_window_generation_unset() {
+  tmux set-option -wqu -t "$1" "@mosaic-_generation" 2>/dev/null
+}
+
+_mosaic_window_state_get() {
+  _mosaic_get_w_raw "@mosaic-_state" "${1:-}"
+}
+
+_mosaic_window_state_set() {
+  local win="$1" state="$2"
+  tmux set-option -wq -t "$win" "@mosaic-_state" "$state"
+}
+
+_mosaic_window_state_unset() {
+  tmux set-option -wqu -t "$1" "@mosaic-_state" 2>/dev/null
+}
+
+_mosaic_pane_owner_generation_get() {
+  local pane="$1" val
+  val=$(tmux show-option -pqv -t "$pane" "@mosaic-_owner-generation" 2>/dev/null)
+  printf '%s\n' "$val"
+}
+
+_mosaic_pane_owner_generation_set() {
+  local pane="$1" generation="$2"
+  tmux set-option -pq -t "$pane" "@mosaic-_owner-generation" "$generation"
+}
+
+_mosaic_pane_owner_generation_unset() {
+  tmux set-option -pqu -t "$1" "@mosaic-_owner-generation" 2>/dev/null
+}
+
+_mosaic_window_panes() {
+  tmux list-panes -t "$(_mosaic_resolve_window "${1:-}")" -F '#{pane_id}' 2>/dev/null || true
+}
+
+_mosaic_window_generation_new() {
+  local win="$1"
+  printf '%s\n' "${win}:$(date +%s%N):$$:$RANDOM"
+}
+
+_mosaic_window_generation_ensure() {
+  local win generation
+  win=$(_mosaic_resolve_window "${1:-}")
+  generation=$(_mosaic_window_generation_get "$win")
+  if [[ -z "$generation" ]]; then
+    generation=$(_mosaic_window_generation_new "$win")
+    _mosaic_window_generation_set "$win" "$generation"
+  fi
+  printf '%s\n' "$generation"
+}
+
+_mosaic_pane_is_owned_by_window() {
+  local pane="$1" win generation owner_generation
+  win=$(_mosaic_resolve_window "${2:-}")
+  generation=$(_mosaic_window_generation_get "$win")
+  [[ -n "$generation" ]] || return 1
+  owner_generation=$(_mosaic_pane_owner_generation_get "$pane")
+  [[ -n "$owner_generation" && "$owner_generation" == "$generation" ]]
+}
+
+_mosaic_window_owned_panes() {
+  local win pane
+  win=$(_mosaic_resolve_window "${1:-}")
+  while IFS= read -r pane; do
+    [[ -n "$pane" ]] || continue
+    _mosaic_pane_is_owned_by_window "$pane" "$win" && printf '%s\n' "$pane"
+  done < <(_mosaic_window_panes "$win")
+}
+
+_mosaic_window_foreign_panes() {
+  local win pane
+  win=$(_mosaic_resolve_window "${1:-}")
+  while IFS= read -r pane; do
+    [[ -n "$pane" ]] || continue
+    _mosaic_pane_is_owned_by_window "$pane" "$win" || printf '%s\n' "$pane"
+  done < <(_mosaic_window_panes "$win")
+}
+
+_mosaic_window_adopt_current_panes() {
+  local win generation pane
+  win=$(_mosaic_resolve_window "${1:-}")
+  generation=$(_mosaic_window_generation_ensure "$win")
+  while IFS= read -r pane; do
+    [[ -n "$pane" ]] || continue
+    _mosaic_pane_owner_generation_set "$pane" "$generation"
+  done < <(_mosaic_window_panes "$win")
+  _mosaic_window_state_set "$win" "managed"
+}
+
+_mosaic_window_bootstrap_ownership() {
+  local win pane_count
+  win=$(_mosaic_resolve_window "${1:-}")
+  _mosaic_window_has_layout "$win" || return 0
+  [[ -z "$(_mosaic_window_generation_get "$win")" ]] || return 0
+  pane_count=$(_mosaic_window_pane_count "$win")
+  [[ "$pane_count" -ge 1 ]] || return 0
+  _mosaic_window_adopt_current_panes "$win"
+}
+
+_mosaic_window_ownership_clear() {
+  local win pane
+  win=$(_mosaic_resolve_window "${1:-}")
+  while IFS= read -r pane; do
+    [[ -n "$pane" ]] || continue
+    _mosaic_pane_owner_generation_unset "$pane"
+  done < <(_mosaic_window_panes "$win")
+  _mosaic_window_state_unset "$win"
+  _mosaic_window_generation_unset "$win"
+}
+
 _mosaic_nmaster_for() {
   local target="${1:-}" val
   val=$(_mosaic_get_w "@mosaic-nmaster" "1" "$target")
