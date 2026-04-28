@@ -148,7 +148,7 @@ fi
 dispatch_optional() {
   local fn="$1" message
   shift
-  if declare -f "$fn" >/dev/null; then
+  if _mosaic_fn_defined "$fn"; then
     "$fn" "$@"
   else
     message="mosaic: $layout does not implement $cmd"
@@ -161,7 +161,7 @@ case "$cmd" in
 relayout | _on-set-option) _layout_relayout "$target_window" ;;
 toggle) _mosaic_toggle_window ;;
 _sync-state)
-  if declare -f _layout_sync_state >/dev/null; then
+  if _mosaic_fn_defined _layout_sync_state; then
     _layout_sync_state "$target_window"
   fi
   ;;
@@ -171,7 +171,7 @@ new-pane)
     exit 1
   fi
   _mosaic_window_structural_guard_set "$target_window" "$RANDOM-$$"
-  if declare -f _layout_new_pane >/dev/null; then
+  if _mosaic_fn_defined _layout_new_pane; then
     pane=$(_layout_new_pane "$target_window")
   else
     pane=$(_mosaic_new_pane_default)
@@ -202,11 +202,11 @@ promote | resize-master)
   fi
   ;;
 '')
-  echo "usage: $0 <op> [args]" >&2
+  printf '%s\n' "usage: $0 <op> [args]" >&2
   exit 1
   ;;
 *)
-  echo "mosaic: unknown op: $cmd" >&2
+  printf '%s\n' "mosaic: unknown op: $cmd" >&2
   exit 1
   ;;
 esac

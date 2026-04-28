@@ -14,34 +14,53 @@ _layout_orientation_for() {
   esac
 }
 
-_layout_layout_for() {
+_layout_orientation_axis_for() {
   case "$1" in
-  left) printf '%s\n' "main-vertical" ;;
-  right) printf '%s\n' "main-vertical-mirrored" ;;
-  top) printf '%s\n' "main-horizontal" ;;
-  bottom) printf '%s\n' "main-horizontal-mirrored" ;;
+  left | right) printf '%s\n' "x" ;;
+  top | bottom) printf '%s\n' "y" ;;
   esac
+}
+
+_layout_orientation_is_mirrored() {
+  case "$1" in
+  right | bottom) return 0 ;;
+  esac
+  return 1
+}
+
+_layout_layout_for() {
+  local orientation="$1" axis suffix=""
+  axis=$(_layout_orientation_axis_for "$orientation")
+  _layout_orientation_is_mirrored "$orientation" && suffix="-mirrored"
+  if [[ "$axis" == "x" ]]; then
+    printf '%s\n' "main-vertical$suffix"
+  else
+    printf '%s\n' "main-horizontal$suffix"
+  fi
 }
 
 _layout_master_pane_option_for() {
-  case "$1" in
-  left | right) printf '%s\n' "main-pane-width" ;;
-  top | bottom) printf '%s\n' "main-pane-height" ;;
-  esac
+  if [[ "$(_layout_orientation_axis_for "$1")" == "x" ]]; then
+    printf '%s\n' "main-pane-width"
+  else
+    printf '%s\n' "main-pane-height"
+  fi
 }
 
 _layout_full_layout_for() {
-  case "$1" in
-  left | right) printf '%s\n' "even-vertical" ;;
-  top | bottom) printf '%s\n' "even-horizontal" ;;
-  esac
+  if [[ "$(_layout_orientation_axis_for "$1")" == "x" ]]; then
+    printf '%s\n' "even-vertical"
+  else
+    printf '%s\n' "even-horizontal"
+  fi
 }
 
 _layout_join_flag_for() {
-  case "$1" in
-  left | right) printf '%s\n' "-v" ;;
-  top | bottom) printf '%s\n' "-h" ;;
-  esac
+  if [[ "$(_layout_orientation_axis_for "$1")" == "x" ]]; then
+    printf '%s\n' "-v"
+  else
+    printf '%s\n' "-h"
+  fi
 }
 
 _layout_apply_layout() {
@@ -62,12 +81,11 @@ _layout_join_extra_masters() {
 }
 
 _layout_new_pane_first_stack() {
-  local win="$1" orientation="$2" target
+  local win="$1" orientation="$2" target axis
   local -a flags=()
   target=$(_mosaic_window_last_pane "$win")
-  case "$orientation" in
-  left | right) flags=(-h) ;;
-  esac
+  axis=$(_layout_orientation_axis_for "$orientation")
+  [[ "$axis" == "x" ]] && flags=(-h)
   _mosaic_new_pane_split_or_append "$win" "$target" "${flags[@]}"
 }
 
@@ -92,38 +110,27 @@ _layout_relayout() {
 }
 
 _layout_new_pane_all_masters() {
-  local win="$1" orientation="$2" n="$3" pbase="$4" target pane
+  local win="$1" orientation="$2" n="$3" pbase="$4" target pane axis
   local -a flags=()
-  case "$orientation" in
-  left)
-    target=$(_mosaic_window_last_pane "$win")
-    flags=(-h)
-    ;;
-  right)
+  axis=$(_layout_orientation_axis_for "$orientation")
+  [[ "$axis" == "x" ]] && flags+=(-h)
+  if _layout_orientation_is_mirrored "$orientation"; then
     target="$win.$pbase"
-    flags=(-h -b)
-    ;;
-  top)
+    flags+=(-b)
+  else
     target=$(_mosaic_window_last_pane "$win")
-    ;;
-  bottom)
-    target="$win.$pbase"
-    flags=(-b)
-    ;;
-  esac
+  fi
   pane=$(_mosaic_new_pane_split_or_append "$win" "$target" "${flags[@]}") || return 1
-  case "$orientation" in
-  right | bottom)
+  if _layout_orientation_is_mirrored "$orientation"; then
     if [[ "$pane" != "$(_mosaic_window_last_pane "$win")" ]]; then
       _mosaic_bubble_keep_focus "$pbase" "$((pbase + n))"
     fi
-    ;;
-  esac
+  fi
   printf '%s\n' "$pane"
 }
 
 _layout_new_pane() {
-  local win n nmaster orientation target pbase
+  local win n nmaster orientation target pbase axis
   local -a flags=()
   win=$(_mosaic_resolve_window "${1:-}")
   n=$(_mosaic_window_pane_count "$win")
@@ -144,9 +151,8 @@ _layout_new_pane() {
     return
   fi
   target=$(_mosaic_window_last_pane "$win")
-  case "$orientation" in
-  top | bottom) flags=(-h) ;;
-  esac
+  axis=$(_layout_orientation_axis_for "$orientation")
+  [[ "$axis" == "y" ]] && flags=(-h)
   _mosaic_new_pane_split_or_append "$win" "$target" "${flags[@]}"
 }
 
@@ -181,19 +187,17 @@ _layout_sync_state() {
   nmaster=$(_mosaic_effective_nmaster "$win" "$n")
   [[ "$nmaster" -ge "$n" ]] && return 0
 
-  local pbase pane_size window_size pct orientation
+  local pbase pane_size window_size pct orientation axis
   orientation=$(_layout_orientation_for "$win")
+  axis=$(_layout_orientation_axis_for "$orientation")
   pbase=$(_mosaic_window_pane_base "$win")
-  case "$orientation" in
-  left | right)
+  if [[ "$axis" == "x" ]]; then
     pane_size=$(tmux display-message -p -t "$win.$pbase" '#{pane_width}' 2>/dev/null)
     window_size=$(tmux display-message -p -t "$win" '#{window_width}' 2>/dev/null)
-    ;;
-  top | bottom)
+  else
     pane_size=$(tmux display-message -p -t "$win.$pbase" '#{pane_height}' 2>/dev/null)
     window_size=$(tmux display-message -p -t "$win" '#{window_height}' 2>/dev/null)
-    ;;
-  esac
+  fi
   [[ -z "$pane_size" ]] && return 0
   [[ -z "$window_size" || "$window_size" -le 0 ]] && return 0
 
