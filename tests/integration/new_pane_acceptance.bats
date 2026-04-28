@@ -106,6 +106,25 @@ setup_master_stack_transition() {
   [ "$(_mosaic_pane_left "$pane")" -lt "$top_master_left" ]
 }
 
+@test "new-pane acceptance: spiral four-to-five pushes the old tail inward while the new pane stays outer right" {
+  local old_inner old_tail pane
+  local old_tail_left old_tail_top
+
+  setup_layout spiral 3
+  old_inner=$(_mosaic_pane_id_at t:1.3)
+  old_tail=$(_mosaic_pane_id_at t:1.4)
+  old_tail_left=$(_mosaic_pane_left "$old_tail")
+  old_tail_top=$(_mosaic_pane_top "$old_tail")
+
+  pane=$(_mosaic_new_pane)
+
+  [ "$(_mosaic_pane_left "$old_tail")" -lt "$old_tail_left" ]
+  [ "$(_mosaic_pane_left "$old_tail")" -eq "$(_mosaic_pane_left "$old_inner")" ]
+  [ "$(_mosaic_pane_top "$old_tail")" -gt "$(_mosaic_pane_top "$old_inner")" ]
+  [ "$(_mosaic_pane_left "$pane")" -eq "$old_tail_left" ]
+  [ "$(_mosaic_pane_top "$pane")" -eq "$old_tail_top" ]
+}
+
 @test "new-pane acceptance: centered-master two-to-three introduces the left stack while keeping the new pane on the right" {
   local left old_right pane
   local old_right_left

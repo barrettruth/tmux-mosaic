@@ -375,8 +375,12 @@ distinct_pane_lefts() {
   assert_recursive_signature spiral 2 "split:%9"
 }
 
-@test "new-pane fast paths: spiral leaves the first node-leaf phase on the append fallback" {
-  assert_recursive_signature spiral 3 "append:t:1"
+@test "new-pane fast paths: spiral targets the first node-leaf phase with a horizontal tail split" {
+  assert_recursive_signature spiral 3 "split:%9 -h"
+}
+
+@test "new-pane fast paths: spiral later node-leaf phases keep targeting the outer tail with a horizontal split" {
+  assert_recursive_signature spiral 6 "split:%9 -h"
 }
 
 @test "new-pane fast paths: spiral 1 -> 2 starts with the new pane on the right before relayout" {
@@ -411,4 +415,43 @@ distinct_pane_lefts() {
   [ "$(last_pane_id t:1)" = "$pane" ]
   [ "$(_mosaic_pane_left "$pane")" = "$(_mosaic_pane_left "$old_tail")" ]
   [ "$(_mosaic_pane_top "$pane")" -gt "$(_mosaic_pane_top "$old_tail")" ]
+}
+
+@test "new-pane fast paths: spiral 3 -> 4 keeps the new pane in the outer right branch before relayout" {
+  local before old_tail pane
+  _mosaic_use_layout spiral
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  _mosaic_split t:1
+  _mosaic_split t:1
+  old_tail=$(_mosaic_pane_id_at t:1.3)
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct spiral t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" -gt "$(_mosaic_pane_left "$old_tail")" ]
+  [ "$(_mosaic_pane_top "$pane")" = "$(_mosaic_pane_top "$old_tail")" ]
+}
+
+@test "new-pane fast paths: spiral 4 -> 5 keeps the new pane in the outer right branch before relayout" {
+  local before old_tail pane
+  _mosaic_use_layout spiral
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  _mosaic_split t:1
+  _mosaic_split t:1
+  _mosaic_split t:1
+  old_tail=$(_mosaic_pane_id_at t:1.4)
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct spiral t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" -gt "$(_mosaic_pane_left "$old_tail")" ]
+  [ "$(_mosaic_pane_top "$pane")" = "$(_mosaic_pane_top "$old_tail")" ]
 }
