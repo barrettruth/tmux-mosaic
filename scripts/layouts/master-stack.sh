@@ -65,6 +65,16 @@ _layout_join_extra_masters() {
   [[ $((n - nmaster)) -gt 1 ]] && tmux select-layout -t "$win.$((pbase + nmaster))" -E 2>/dev/null || true
 }
 
+_layout_new_pane_first_stack() {
+  local win="$1" orientation="$2" target
+  local -a flags=()
+  target=$(_mosaic_window_last_pane "$win")
+  case "$orientation" in
+  left | right) flags=(-h) ;;
+  esac
+  _mosaic_new_pane_split_or_append "$win" "$target" "${flags[@]}"
+}
+
 _layout_relayout() {
   local win n mfact orientation nmaster pbase
   win=$(_mosaic_resolve_window "${1:-}")
@@ -105,9 +115,13 @@ _layout_new_pane_all_masters() {
     flags=(-b)
     ;;
   esac
-  pane=$(_mosaic_new_pane_split "$target" "${flags[@]}") || return 1
+  pane=$(_mosaic_new_pane_split_or_append "$win" "$target" "${flags[@]}") || return 1
   case "$orientation" in
-  right | bottom) _mosaic_bubble_keep_focus "$pbase" "$((pbase + n))" ;;
+  right | bottom)
+    if [[ "$pane" != "$(_mosaic_window_last_pane "$win")" ]]; then
+      _mosaic_bubble_keep_focus "$pbase" "$((pbase + n))"
+    fi
+    ;;
   esac
   printf '%s\n' "$pane"
 }
@@ -119,7 +133,12 @@ _layout_new_pane() {
   win=$(_mosaic_resolve_window "${1:-}")
   n=$(_mosaic_window_pane_count "$win")
   nmaster=$(_mosaic_effective_nmaster "$win" "$n")
-  if [[ "$n" -lt "$nmaster" || "$nmaster" -eq 1 && "$n" -eq "$nmaster" ]]; then
+  if [[ "$nmaster" -eq 1 && "$n" -eq 1 ]]; then
+    orientation=$(_layout_orientation_for "$win")
+    _layout_new_pane_first_stack "$win" "$orientation"
+    return
+  fi
+  if [[ "$n" -lt "$nmaster" ]]; then
     _mosaic_new_pane_append "$win"
     return
   fi
@@ -133,7 +152,7 @@ _layout_new_pane() {
   case "$orientation" in
   top | bottom) flags=(-h) ;;
   esac
-  _mosaic_new_pane_split "$target" "${flags[@]}"
+  _mosaic_new_pane_split_or_append "$win" "$target" "${flags[@]}"
 }
 
 _layout_promote() {

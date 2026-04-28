@@ -71,6 +71,17 @@ _layout_pane_base() { printf '%s\\n' 1; }"
   [ "$output" = "$expected" ]
 }
 
+assert_master_stack_first_stack_signature() {
+  local orientation="${1:?orientation required}" expected="${2:?expected signature required}" setup
+  setup="_mosaic_window_pane_count() { printf '%s\\n' 1; }
+_mosaic_effective_nmaster() { printf '%s\\n' 1; }
+_layout_orientation_for() { printf '%s\\n' $orientation; }"
+
+  run layout_new_pane_signature master-stack t:1 "$setup"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$expected" ]
+}
+
 assert_single_side_signature() {
   local layout="${1:?layout required}" expected="${2:?expected signature required}" setup
   setup="_mosaic_window_pane_count() { printf '%s\\n' 1; }
@@ -91,9 +102,29 @@ _mosaic_nmaster_for() { printf '%s\\n' 1; }"
   [ "$output" = "$expected" ]
 }
 
+assert_grid_signature() {
+  local count="${1:?count required}" expected="${2:?expected signature required}" setup
+  setup="_mosaic_window_pane_count() { printf '%s\\n' $count; }"
+
+  run layout_new_pane_signature grid t:1 "$setup"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$expected" ]
+}
+
 assert_recursive_signature() {
   local layout="${1:?layout required}" count="${2:?count required}" expected="${3:?expected signature required}" setup
   setup="_mosaic_window_pane_count() { printf '%s\\n' $count; }"
+
+  run layout_new_pane_signature "$layout" t:1 "$setup"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$expected" ]
+}
+
+assert_split_failure_falls_back() {
+  local layout="${1:?layout required}" count="${2:?count required}" expected="${3:?expected signature required}" setup
+  setup="_mosaic_window_pane_count() { printf '%s\\n' $count; }
+_mosaic_new_pane_split() { return 1; }
+_mosaic_new_pane_append() { printf '$expected\\n'; }"
 
   run layout_new_pane_signature "$layout" t:1 "$setup"
   [ "$status" -eq 0 ]
@@ -190,8 +221,108 @@ distinct_pane_lefts() {
   [ "$(distinct_pane_lefts t:1)" = "0" ]
 }
 
+@test "new-pane fast paths: grid 1 -> 2 keeps the default split on the tail" {
+  assert_grid_signature 1 "split:%9"
+}
+
+@test "new-pane fast paths: grid 2 -> 3 keeps the default split on the tail" {
+  assert_grid_signature 2 "split:%9"
+}
+
+@test "new-pane fast paths: grid 3 -> 4 targets the tail with a horizontal split" {
+  assert_grid_signature 3 "split:%9 -h"
+}
+
+@test "new-pane fast paths: grid 4 -> 5 keeps the default split for an unavoidable global reshape" {
+  assert_grid_signature 4 "split:%9"
+}
+
+@test "new-pane fast paths: grid 5 -> 6 targets the tail with a horizontal split" {
+  assert_grid_signature 5 "split:%9 -h"
+}
+
+@test "new-pane fast paths: grid 6 -> 7 keeps the default split for an unavoidable global reshape" {
+  assert_grid_signature 6 "split:%9"
+}
+
+@test "new-pane fast paths: grid 2 -> 3 keeps the new pane in the bottom tail before relayout" {
+  local before old_tail pane
+  _mosaic_use_layout grid
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  _mosaic_split t:1
+  _mosaic_t select-pane -t t:1.1
+  old_tail=$(_mosaic_pane_id_at t:1.2)
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct grid t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" = "$(_mosaic_pane_left "$old_tail")" ]
+  [ "$(_mosaic_pane_top "$pane")" -gt "$(_mosaic_pane_top "$old_tail")" ]
+}
+
+@test "new-pane fast paths: grid 3 -> 4 splits the bottom tail to the right before relayout" {
+  local before old_tail pane
+  _mosaic_use_layout grid
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  _mosaic_split t:1
+  _mosaic_split t:1
+  _mosaic_t select-pane -t t:1.1
+  old_tail=$(_mosaic_pane_id_at t:1.3)
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct grid t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" -gt "$(_mosaic_pane_left "$old_tail")" ]
+  [ "$(_mosaic_pane_top "$pane")" = "$(_mosaic_pane_top "$old_tail")" ]
+}
+
+@test "new-pane fast paths: grid 4 -> 5 keeps the new pane in the tail pane's lower band before relayout" {
+  local before old_tail pane
+  _mosaic_use_layout grid
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  _mosaic_split t:1
+  _mosaic_split t:1
+  _mosaic_split t:1
+  _mosaic_t select-pane -t t:1.1
+  old_tail=$(_mosaic_pane_id_at t:1.4)
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct grid t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" = "$(_mosaic_pane_left "$old_tail")" ]
+  [ "$(_mosaic_pane_top "$pane")" -gt "$(_mosaic_pane_top "$old_tail")" ]
+}
+
 @test "new-pane fast paths: master-stack existing left stack targets the tail directly" {
   assert_master_stack_signature left "split:%9"
+}
+
+@test "new-pane fast paths: master-stack first left stack pane uses a horizontal split" {
+  assert_master_stack_first_stack_signature left "split:%9 -h"
+}
+
+@test "new-pane fast paths: master-stack first top stack pane keeps the default split" {
+  assert_master_stack_first_stack_signature top "split:%9"
+}
+
+@test "new-pane fast paths: master-stack first right stack pane preserves append order with a horizontal split" {
+  assert_master_stack_first_stack_signature right "split:%9 -h"
+}
+
+@test "new-pane fast paths: master-stack first bottom stack pane preserves append order with the default split" {
+  assert_master_stack_first_stack_signature bottom "split:%9"
 }
 
 @test "new-pane fast paths: master-stack existing right stack targets the tail directly" {
@@ -243,6 +374,74 @@ distinct_pane_lefts() {
   _mosaic_wait_pane_present "$pane" t:1
   [ "$(last_pane_id t:1)" = "$pane" ]
   [ "$(_mosaic_pane_left "$pane")" -gt 0 ]
+}
+
+@test "new-pane fast paths: master-stack left 1 -> 2 starts the new pane on the right before relayout" {
+  local before pane
+  _mosaic_use_layout master-stack
+  _mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "left"
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct master-stack t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" -gt 0 ]
+  [ "$(_mosaic_pane_top "$pane")" -eq 0 ]
+}
+
+@test "new-pane fast paths: master-stack top 1 -> 2 starts the new pane at the bottom before relayout" {
+  local before pane
+  _mosaic_use_layout master-stack
+  _mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "top"
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct master-stack t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" -eq 0 ]
+  [ "$(_mosaic_pane_top "$pane")" -gt 0 ]
+}
+
+@test "new-pane fast paths: master-stack right 1 -> 2 keeps the new pane at the tail and in a side split before relayout" {
+  local before pane
+  _mosaic_use_layout master-stack
+  _mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "right"
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct master-stack t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" -gt 0 ]
+  [ "$(_mosaic_pane_top "$pane")" -eq 0 ]
+}
+
+@test "new-pane fast paths: master-stack bottom 1 -> 2 keeps the new pane at the tail and in a bottom split before relayout" {
+  local before pane
+  _mosaic_use_layout master-stack
+  _mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "bottom"
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct master-stack t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" -eq 0 ]
+  [ "$(_mosaic_pane_top "$pane")" -gt 0 ]
 }
 
 @test "new-pane fast paths: master-stack all-masters right transition keeps the new pane on the left and at the tail before relayout" {
@@ -351,6 +550,10 @@ distinct_pane_lefts() {
   assert_recursive_signature dwindle 3 "split:%9 -h"
 }
 
+@test "new-pane fast paths: dwindle falls back to append when the recursive tail split fails" {
+  assert_split_failure_falls_back dwindle 3 "append:t:1"
+}
+
 @test "new-pane fast paths: dwindle 1 -> 2 starts with the new pane on the right before relayout" {
   local before pane
   _mosaic_use_layout dwindle
@@ -377,6 +580,10 @@ distinct_pane_lefts() {
 
 @test "new-pane fast paths: spiral targets the first node-leaf phase with a horizontal tail split" {
   assert_recursive_signature spiral 3 "split:%9 -h"
+}
+
+@test "new-pane fast paths: spiral falls back to append when the recursive tail split fails" {
+  assert_split_failure_falls_back spiral 3 "append:t:1"
 }
 
 @test "new-pane fast paths: spiral later node-leaf phases keep targeting the outer tail with a horizontal split" {

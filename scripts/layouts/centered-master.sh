@@ -177,7 +177,7 @@ _layout_new_pane() {
   fi
   target=$(_mosaic_window_last_pane "$win")
   [[ "$n" -eq 1 ]] && flags=(-h)
-  _mosaic_new_pane_split "$target" "${flags[@]}"
+  _mosaic_new_pane_split_or_append "$win" "$target" "${flags[@]}"
 }
 
 _layout_promote() {

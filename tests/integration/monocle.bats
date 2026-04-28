@@ -40,6 +40,19 @@ active_pane_id() {
   [ "$(_mosaic_pane_index)" = "2" ]
 }
 
+@test "monocle: explicit new-pane re-zooms and focuses the new pane after manual unzoom" {
+  local pane
+  for _ in 1 2; do _mosaic_split; done
+
+  _mosaic_t resize-pane -Z -t t:1
+  [ "$(window_zoomed)" = "0" ]
+
+  pane=$(_mosaic_new_pane)
+
+  [ "$(window_zoomed)" = "1" ]
+  [ "$(active_pane_id)" = "$pane" ]
+}
+
 @test "monocle: selecting the next pane re-zooms the new active pane" {
   for _ in 1 2; do _mosaic_split; done
 

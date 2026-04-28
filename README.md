@@ -545,6 +545,52 @@ bind p select-pane -t :.-
 </details>
 
 
+## Explicit `new-pane` limits
+
+Mosaic now tries to birth explicit `new-pane` directly into the active layout's
+semantic tail before the final relayout. Most common cases stay local, but a
+few layout states still need visible correction during creation:
+
+- `master-stack`
+  - `left` and `top` `1 -> 2` start in the final broad branch immediately.
+  - `right` and `bottom` `1 -> 2` keep append-to-end pane order, so tmux can
+    only start on the non-mirrored side before the final relayout.
+  - The `nmaster > 1` all-masters -> first-stack transition still reshapes the
+    whole master block.
+- `centered-master`
+  - The first side-stack birth is targeted directly.
+  - The default `2 -> 3` transition and later odd side-stack parity changes
+    still shift one existing pane into or across the side stacks before the
+    centered layout settles.
+- `three-column`
+  - The first side-column birth is targeted directly.
+  - The default `3 -> 4` transition and later even parity changes still move
+    one existing pane from the right column into the middle column.
+- `even-horizontal` / `even-vertical`
+  - The new pane is born in the right row or column, then tmux re-equalizes the
+    whole row or column.
+- `grid`
+  - `2 -> 3` still moves the old bottom full-width pane into the new top row.
+  - Current pane counts `4`, `6`, `9`, `12`, and more generally `k^2` and
+    `k(k + 1)` for `k >= 2`, still force a true global retile on the next pane.
+  - Other tested counts now split the tail directly before the final retile.
+- `spiral`
+  - The easy leaf-node phases and the first node-leaf phase now birth in the
+    outer recursive tail directly.
+  - Later node-leaf phases still push the previous tail inward while the new
+    pane stays on the outer branch first.
+- `dwindle`
+  - Normal growth stays local to the recursive tail.
+- `monocle`
+  - `new-pane` always ends with the new pane focused and zoomed.
+  - If the window was manually unzoomed first, Mosaic reasserts zoom after
+    creation.
+- Small windows
+  - If the intended target pane is too small to split, Mosaic now falls back to
+    a generic append path when some other pane in the window can still split.
+  - If no pane in the window can split, tmux still reports `no space for new
+    pane`.
+
 ## Pane Ownership Model
 
 Once a tmux window can contain both panes that should participate in a Mosaic

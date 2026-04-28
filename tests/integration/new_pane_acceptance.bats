@@ -176,6 +176,23 @@ setup_master_stack_transition() {
   [ "$(_mosaic_pane_left "$pane")" -gt "$(_mosaic_pane_left "$old_right")" ]
 }
 
+@test "new-pane acceptance: grid two-to-three moves the old bottom pane into the top row while the new pane stays on the bottom" {
+  local old_top old_bottom pane
+  local old_bottom_top
+
+  setup_layout grid 1
+  old_top=$(_mosaic_pane_id_at t:1.1)
+  old_bottom=$(_mosaic_pane_id_at t:1.2)
+  old_bottom_top=$(_mosaic_pane_top "$old_bottom")
+
+  pane=$(_mosaic_new_pane)
+
+  [ "$(_mosaic_pane_top "$old_top")" -eq 0 ]
+  [ "$(_mosaic_pane_top "$old_bottom")" -lt "$old_bottom_top" ]
+  [ "$(_mosaic_pane_top "$old_bottom")" -eq "$(_mosaic_pane_top "$old_top")" ]
+  [ "$(_mosaic_pane_top "$pane")" -gt "$(_mosaic_pane_top "$old_top")" ]
+}
+
 @test "new-pane acceptance: grid four-to-five is a global reshape" {
   local first second third fourth pane
   local first_rect second_rect third_rect fourth_rect
@@ -198,6 +215,25 @@ setup_master_stack_transition() {
   ! _mosaic_rect_contains $second_rect "$new_left" "$new_top" "$new_width" "$new_height"
   ! _mosaic_rect_contains $third_rect "$new_left" "$new_top" "$new_width" "$new_height"
   ! _mosaic_rect_contains $fourth_rect "$new_left" "$new_top" "$new_width" "$new_height"
+}
+
+@test "new-pane acceptance: grid six-to-seven is also a global reshape" {
+  local pane
+  local new_left new_top new_width new_height
+  local -a rects
+
+  setup_layout grid 5
+  while IFS= read -r old; do
+    [[ -n "$old" ]] || continue
+    rects+=("$(_mosaic_pane_rect "$old")")
+  done < <(_mosaic_pane_ids t:1)
+
+  pane=$(_mosaic_new_pane)
+  read -r new_left new_top new_width new_height <<<"$(_mosaic_pane_rect "$pane")"
+
+  for rect in "${rects[@]}"; do
+    ! _mosaic_rect_contains $rect "$new_left" "$new_top" "$new_width" "$new_height"
+  done
 }
 
 @test "new-pane acceptance: tmux cannot get mirrored side and append order from one horizontal split" {
@@ -231,6 +267,44 @@ setup_master_stack_transition() {
   [ "$(_mosaic_t display-message -p -t t:1 '#{window_zoomed_flag}')" = "1" ]
   [ "$(_mosaic_t display-message -p -t t:1 '#{pane_id}')" = "$pane" ]
   [ "$pane" != "$active_before" ]
+}
+
+@test "new-pane acceptance: master-stack falls back when the stack tail is too small" {
+  local tail pane
+
+  _mosaic_teardown_server
+  _mosaic_setup_server 20 10
+  _mosaic_use_layout master-stack
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  for _ in 1 2 3; do
+    _mosaic_split
+  done
+  tail=$(_mosaic_pane_id_at t:1.4)
+  _mosaic_t select-pane -t "$tail"
+
+  pane=$(_mosaic_new_pane)
+
+  [ "$(_mosaic_pane_count t:1)" = "5" ]
+  [ "$(_mosaic_last_pane_id t:1)" = "$pane" ]
+}
+
+@test "new-pane acceptance: centered-master falls back when the side tail is too small" {
+  local tail pane
+
+  _mosaic_teardown_server
+  _mosaic_setup_server 20 10
+  _mosaic_use_layout centered-master
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  for _ in 1 2 3 4 5; do
+    _mosaic_split
+  done
+  tail=$(_mosaic_pane_id_at t:1.6)
+  _mosaic_t select-pane -t "$tail"
+
+  pane=$(_mosaic_new_pane)
+
+  [ "$(_mosaic_pane_count t:1)" = "7" ]
+  [ "$(_mosaic_last_pane_id t:1)" = "$pane" ]
 }
 
 @test "new-pane acceptance: raw split reports no space on a tiny pane" {
