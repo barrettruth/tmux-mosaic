@@ -17,6 +17,17 @@ test:
       bats -j "$jobs" tests/integration; \
     fi
 
+test-one filter:
+    BATS_FILTER='{{filter}}' just test
+
+test-file file:
+    jobs="${BATS_JOBS:-$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}"; \
+    bats -j "$jobs" "tests/integration/{{file}}"
+
+test-new-pane:
+    jobs="${BATS_JOBS:-$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}"; \
+    bats -j "$jobs" tests/integration/new_pane_fast_paths.bats tests/integration/new_pane_acceptance.bats tests/integration/grid.bats tests/integration/monocle.bats
+
 build:
     nix build .#default
 
