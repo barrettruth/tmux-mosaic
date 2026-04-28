@@ -165,7 +165,17 @@ _layout_relayout() {
 }
 
 _layout_toggle() { _mosaic_toggle_window; }
-_layout_new_pane() { _mosaic_new_pane_append "$1"; }
+_layout_new_pane() {
+  local win n nmaster
+  win=$(_mosaic_resolve_window "${1:-}")
+  n=$(_mosaic_window_pane_count "$win")
+  nmaster=$(_mosaic_nmaster_for "$win")
+  if [[ "$n" -eq 1 && "$nmaster" -eq 1 ]]; then
+    _mosaic_new_pane_split "$(_mosaic_window_last_pane "$win")" -h
+  else
+    _mosaic_new_pane_append "$win"
+  fi
+}
 
 _layout_promote() {
   local idx n win nmaster pbase master_base stack_top

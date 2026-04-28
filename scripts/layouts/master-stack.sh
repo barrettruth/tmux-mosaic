@@ -86,7 +86,23 @@ _layout_relayout() {
 }
 
 _layout_toggle() { _mosaic_toggle_window; }
-_layout_new_pane() { _mosaic_new_pane_append "$1"; }
+_layout_new_pane() {
+  local win n nmaster orientation target
+  local -a flags=()
+  win=$(_mosaic_resolve_window "${1:-}")
+  n=$(_mosaic_window_pane_count "$win")
+  nmaster=$(_mosaic_effective_nmaster "$win" "$n")
+  if [[ "$n" -le "$nmaster" ]]; then
+    _mosaic_new_pane_append "$win"
+    return
+  fi
+  orientation=$(_layout_orientation_for "$win")
+  target=$(_mosaic_window_last_pane "$win")
+  case "$orientation" in
+  top | bottom) flags=(-h) ;;
+  esac
+  _mosaic_new_pane_split "$target" "${flags[@]}"
+}
 
 _layout_promote() {
   local idx n pbase
