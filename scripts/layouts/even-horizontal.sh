@@ -2,7 +2,6 @@
 
 _layout_relayout() { _mosaic_relayout_simple even-horizontal "${1:-}"; }
 
-_layout_toggle() { _mosaic_toggle_window; }
 _layout_new_pane() {
   _mosaic_new_pane_split_or_append "${1:-}" "$(_mosaic_window_last_pane "${1:-}")" -h
 }

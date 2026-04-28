@@ -7,7 +7,7 @@ A tmux plugin that applies tiling layouts, tracks which panes belong to them, an
 ## Dependencies
 
 - [tmux](https://github.com/tmux/tmux) 3.2+
-- [bash](https://git.savannah.gnu.org/cgit/bash.git)
+- [bash](https://git.savannah.gnu.org/cgit/bash.git) 3.2+
 
 ## Installation
 

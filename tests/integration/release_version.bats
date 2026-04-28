@@ -70,6 +70,12 @@ EOF
   [ "$output" = "nightly-0.1.0-dev-0123456" ]
 }
 
+@test "release-version: nightly-tag lowercases mixed-case shas" {
+  run env MOSAIC_FLAKE_FILE="$BATS_TEST_TMPDIR/flake.nix" "$RELEASE_SCRIPT" nightly-tag AbCdEf0123456789abcdef0123456789ABCDEF01
+  [ "$status" -eq 0 ]
+  [ "$output" = "nightly-0.1.0-dev-abcdef0" ]
+}
+
 @test "release-version: nightly-tag rejects stable versions" {
   run env MOSAIC_FLAKE_FILE="$BATS_TEST_TMPDIR/flake.nix" "$RELEASE_SCRIPT" nightly-tag 0.1.0 0123456789abcdef0123456789abcdef01234567
   [ "$status" -ne 0 ]

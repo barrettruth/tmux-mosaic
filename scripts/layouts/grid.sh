@@ -13,7 +13,6 @@ _layout_global_reshape_count() {
   return 1
 }
 
-_layout_toggle() { _mosaic_toggle_window; }
 _layout_new_pane() {
   local win n target
   win=$(_mosaic_resolve_window "${1:-}")

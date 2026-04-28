@@ -159,7 +159,7 @@ dispatch_optional() {
 ensure_current || exit 0
 case "$cmd" in
 relayout | _on-set-option) _layout_relayout "$target_window" ;;
-toggle) _layout_toggle ;;
+toggle) _mosaic_toggle_window ;;
 _sync-state)
   if declare -f _layout_sync_state >/dev/null; then
     _layout_sync_state "$target_window"
