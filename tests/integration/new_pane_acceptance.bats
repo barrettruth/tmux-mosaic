@@ -19,6 +19,17 @@ setup_layout() {
   done
 }
 
+setup_master_stack_transition() {
+  local orientation="${1:?orientation required}" nmaster="${2:?nmaster required}"
+  _mosaic_use_layout master-stack
+  _mosaic_t set-option -wq -t t:1 "@mosaic-orientation" "$orientation"
+  _mosaic_t set-option -wq -t t:1 "@mosaic-nmaster" "$nmaster"
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  for ((i = 1; i < nmaster; i++)); do
+    _mosaic_split
+  done
+}
+
 @test "new-pane acceptance: dwindle tail growth is an exact local split" {
   local first second third tail pane
   local first_rect second_rect third_rect
@@ -59,6 +70,40 @@ setup_layout() {
   read -r new_left new_top new_width new_height <<<"$(_mosaic_pane_rect "$pane")"
   _mosaic_rect_contains "$left" "$top" "$width" "$height" "$new_left" "$new_top" "$new_width" "$new_height"
   [ "$(_mosaic_pane_width "$first")" -lt "$first_width" ]
+}
+
+@test "new-pane acceptance: master-stack left all-masters transition compresses masters into the left branch while the new pane stays right" {
+  local top_master bottom_master pane
+  local top_master_left bottom_master_left
+
+  setup_master_stack_transition left 2
+  top_master=$(_mosaic_pane_id_at t:1.1)
+  bottom_master=$(_mosaic_pane_id_at t:1.2)
+
+  pane=$(_mosaic_new_pane)
+  top_master_left=$(_mosaic_pane_left "$top_master")
+  bottom_master_left=$(_mosaic_pane_left "$bottom_master")
+
+  [ "$top_master_left" -eq 0 ]
+  [ "$bottom_master_left" -eq 0 ]
+  [ "$(_mosaic_pane_left "$pane")" -gt "$top_master_left" ]
+}
+
+@test "new-pane acceptance: master-stack right all-masters transition compresses masters into the right branch while the new pane stays left" {
+  local top_master bottom_master pane
+  local top_master_left bottom_master_left
+
+  setup_master_stack_transition right 2
+  top_master=$(_mosaic_pane_id_at t:1.1)
+  bottom_master=$(_mosaic_pane_id_at t:1.2)
+
+  pane=$(_mosaic_new_pane)
+  top_master_left=$(_mosaic_pane_left "$top_master")
+  bottom_master_left=$(_mosaic_pane_left "$bottom_master")
+
+  [ "$top_master_left" -gt 0 ]
+  [ "$bottom_master_left" -gt 0 ]
+  [ "$(_mosaic_pane_left "$pane")" -lt "$top_master_left" ]
 }
 
 @test "new-pane acceptance: centered-master two-to-three introduces the left stack while keeping the new pane on the right" {
