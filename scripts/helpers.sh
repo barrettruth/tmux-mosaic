@@ -603,8 +603,12 @@ _mosaic_bubble_keep_focus() {
   done
 }
 
+_mosaic_fn_defined() {
+  declare -f "$1" >/dev/null 2>&1
+}
+
 _mosaic_fibonacci_variant() {
-  if declare -f _layout_fibonacci_variant >/dev/null 2>&1; then
+  if _mosaic_fn_defined _layout_fibonacci_variant; then
     _layout_fibonacci_variant
   else
     printf '%s\n' "spiral"
@@ -630,6 +634,11 @@ _mosaic_layout_leaf_reset() {
 _mosaic_layout_leaf() {
   local __out="$1" sx="$2" sy="$3" x="$4" y="$5" id="$_mosaic_layout_leaf_id"
   _mosaic_layout_leaf_id=$((_mosaic_layout_leaf_id + 1))
+  printf -v "$__out" '%sx%s,%s,%s,%s' "$sx" "$sy" "$x" "$y" "$id"
+}
+
+_mosaic_layout_leaf_at() {
+  local __out="$1" sx="$2" sy="$3" x="$4" y="$5" id="$6"
   printf -v "$__out" '%sx%s,%s,%s,%s' "$sx" "$sy" "$x" "$y" "$id"
 }
 
@@ -769,12 +778,14 @@ _mosaic_fibonacci_new_pane() {
 }
 
 _mosaic_fibonacci_layout_node() {
-  local __out="$1" sx="$2" sy="$3" x="$4" y="$5" n="$6" step="$7" mfact="$8"
+  local sx="$1" sy="$2" x="$3" y="$4" n="$5" step="$6" mfact="$7" leaf_id="$8"
   local split order next axis container
-  local node_a_var="${__out}_a" node_b_var="${__out}_b" first_size second_size
+  local node_a node_b branch_next_id first_size second_size layout
+  local output_next_id output_layout
 
   if [[ "$n" -eq 1 ]]; then
-    _mosaic_layout_leaf "$__out" "$sx" "$sy" "$x" "$y"
+    _mosaic_layout_leaf_at layout "$sx" "$sy" "$x" "$y" "$leaf_id"
+    printf '%s\t%s\n' "$((leaf_id + 1))" "$layout"
     return
   fi
 
@@ -799,34 +810,39 @@ _mosaic_fibonacci_layout_node() {
 
   if [[ "$axis" == "x" ]]; then
     if [[ "$order" == "leaf-node" ]]; then
-      _mosaic_layout_leaf "$node_a_var" "$first_size" "$sy" "$x" "$y"
-      _mosaic_fibonacci_layout_node "$node_b_var" "$second_size" "$sy" "$((x + first_size + 1))" "$y" "$((n - 1))" "$next" "$mfact"
+      _mosaic_layout_leaf_at node_a "$first_size" "$sy" "$x" "$y" "$leaf_id"
+      IFS=$'\t' read -r branch_next_id node_b <<<"$(_mosaic_fibonacci_layout_node "$second_size" "$sy" "$((x + first_size + 1))" "$y" "$((n - 1))" "$next" "$mfact" "$((leaf_id + 1))")"
     else
-      _mosaic_fibonacci_layout_node "$node_a_var" "$first_size" "$sy" "$x" "$y" "$((n - 1))" "$next" "$mfact"
-      _mosaic_layout_leaf "$node_b_var" "$second_size" "$sy" "$((x + first_size + 1))" "$y"
+      IFS=$'\t' read -r branch_next_id node_a <<<"$(_mosaic_fibonacci_layout_node "$first_size" "$sy" "$x" "$y" "$((n - 1))" "$next" "$mfact" "$leaf_id")"
+      _mosaic_layout_leaf_at node_b "$second_size" "$sy" "$((x + first_size + 1))" "$y" "$branch_next_id"
+      branch_next_id=$((branch_next_id + 1))
     fi
   else
     if [[ "$order" == "leaf-node" ]]; then
-      _mosaic_layout_leaf "$node_a_var" "$sx" "$first_size" "$x" "$y"
-      _mosaic_fibonacci_layout_node "$node_b_var" "$sx" "$second_size" "$x" "$((y + first_size + 1))" "$((n - 1))" "$next" "$mfact"
+      _mosaic_layout_leaf_at node_a "$sx" "$first_size" "$x" "$y" "$leaf_id"
+      IFS=$'\t' read -r branch_next_id node_b <<<"$(_mosaic_fibonacci_layout_node "$sx" "$second_size" "$x" "$((y + first_size + 1))" "$((n - 1))" "$next" "$mfact" "$((leaf_id + 1))")"
     else
-      _mosaic_fibonacci_layout_node "$node_a_var" "$sx" "$first_size" "$x" "$y" "$((n - 1))" "$next" "$mfact"
-      _mosaic_layout_leaf "$node_b_var" "$sx" "$second_size" "$x" "$((y + first_size + 1))"
+      IFS=$'\t' read -r branch_next_id node_a <<<"$(_mosaic_fibonacci_layout_node "$sx" "$first_size" "$x" "$y" "$((n - 1))" "$next" "$mfact" "$leaf_id")"
+      _mosaic_layout_leaf_at node_b "$sx" "$second_size" "$x" "$((y + first_size + 1))" "$branch_next_id"
+      branch_next_id=$((branch_next_id + 1))
     fi
   fi
 
   if [[ "$container" == "{}" ]]; then
-    printf -v "$__out" '%sx%s,%s,%s{%s,%s}' "$sx" "$sy" "$x" "$y" "${!node_a_var}" "${!node_b_var}"
+    printf -v layout '%sx%s,%s,%s{%s,%s}' "$sx" "$sy" "$x" "$y" "$node_a" "$node_b"
   else
-    printf -v "$__out" '%sx%s,%s,%s[%s,%s]' "$sx" "$sy" "$x" "$y" "${!node_a_var}" "${!node_b_var}"
+    printf -v layout '%sx%s,%s,%s[%s,%s]' "$sx" "$sy" "$x" "$y" "$node_a" "$node_b"
   fi
+  output_next_id="$branch_next_id"
+  output_layout="$layout"
+  printf '%s\t%s\n' "$output_next_id" "$output_layout"
 }
 
 _mosaic_fibonacci_layout_body() {
   local __out="$1" sx="$2" sy="$3" n="$4" mfact="$5"
   local layout
   _mosaic_layout_leaf_reset
-  _mosaic_fibonacci_layout_node layout "$sx" "$sy" 0 0 "$n" 0 "$mfact"
+  IFS=$'\t' read -r _ layout <<<"$(_mosaic_fibonacci_layout_node "$sx" "$sy" 0 0 "$n" 0 "$mfact" 0)"
   printf -v "$__out" '%s' "$layout"
 }
 
