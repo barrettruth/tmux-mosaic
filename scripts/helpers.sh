@@ -478,14 +478,46 @@ _mosaic_new_pane_split() {
 _mosaic_new_pane_default() { _mosaic_new_pane_split "$(_mosaic_current_pane)"; }
 
 _mosaic_new_pane_append() {
-  local win="$1" pane target_pane last_pane
-  target_pane=$(_mosaic_current_pane)
+  local win="$1" pane current_pane source_pane last_pane candidate idx pbase n end
+  current_pane=$(_mosaic_current_pane)
+  source_pane="$current_pane"
   last_pane=$(_mosaic_window_last_pane "$win")
-  pane=$(_mosaic_new_pane_default) || return 1
-  if [[ "$target_pane" != "$last_pane" ]]; then
-    _mosaic_move_keep_focus -s "$pane" -t "$last_pane"
+  pane=$(_mosaic_new_pane_split "$source_pane" 2>/dev/null) || {
+    while IFS= read -r candidate; do
+      [[ -n "$candidate" ]] || continue
+      [[ "$candidate" == "$current_pane" ]] && continue
+      pane=$(_mosaic_new_pane_split "$candidate" 2>/dev/null) || continue
+      source_pane="$candidate"
+      break
+    done < <(_mosaic_window_panes "$win")
+  }
+  if [[ -z "$pane" ]]; then
+    _mosaic_new_pane_split "$current_pane"
+    return 1
+  fi
+  if [[ "$source_pane" != "$last_pane" ]]; then
+    idx=$(tmux display-message -p -t "$pane" '#{pane_index}')
+    pbase=$(_mosaic_current_pane_base)
+    n=$(_mosaic_window_pane_count "$win")
+    end=$((pbase + n - 1))
+    if [[ "$idx" -ne "$end" ]]; then
+      _mosaic_bubble_keep_focus "$idx" "$end"
+    fi
   fi
   printf '%s\n' "$pane"
+}
+
+_mosaic_new_pane_split_or_append() {
+  local win target pane
+  win=$(_mosaic_resolve_window "${1:-}")
+  target="${2:?target pane required}"
+  shift 2
+  pane=$(_mosaic_new_pane_split "$target" "$@" 2>/dev/null) && {
+    printf '%s\n' "$pane"
+    return 0
+  }
+  _mosaic_log "new-pane: fallback-append win=$win target=$target flags=$*"
+  _mosaic_new_pane_append "$win"
 }
 
 _mosaic_can_relayout_window() {
@@ -684,7 +716,7 @@ _mosaic_fibonacci_new_pane() {
   case "$split" in
   master | x) flags=(-h) ;;
   esac
-  _mosaic_new_pane_split "$target" "${flags[@]}"
+  _mosaic_new_pane_split_or_append "$win" "$target" "${flags[@]}"
 }
 
 _mosaic_fibonacci_layout_node() {

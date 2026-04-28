@@ -11,6 +11,11 @@ teardown() {
   _mosaic_teardown_server
 }
 
+grid_helper_eval() {
+  local cmd="${1:?command required}"
+  REPO_ROOT="$REPO_ROOT" bash -lc "source '$REPO_ROOT/scripts/helpers.sh'; source '$REPO_ROOT/scripts/layouts/grid.sh'; $cmd"
+}
+
 @test "grid: 4 panes use tiled layout" {
   for _ in 1 2 3; do _mosaic_split; done
   _mosaic_op relayout
@@ -29,6 +34,18 @@ teardown() {
   [ "$(printf '%s\n' "$tops" | wc -l)" = "2" ]
   [ $(($(printf '%s\n' "$widths" | tail -n1) - $(printf '%s\n' "$widths" | head -n1))) -le 1 ]
   [ $(($(printf '%s\n' "$heights" | tail -n1) - $(printf '%s\n' "$heights" | head -n1))) -le 1 ]
+}
+
+@test "grid: global reshape counts follow the square and square-plus-row families" {
+  run grid_helper_eval '
+    for n in 3 4 5 6 7 8 9 10 11 12; do
+      if _layout_global_reshape_count "$n"; then
+        printf "%s\n" "$n"
+      fi
+    done
+  '
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(printf '4\n6\n9\n12')" ]
 }
 
 @test "grid: promote surfaces the missing operation message in direct cli use" {
