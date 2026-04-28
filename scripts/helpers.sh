@@ -194,6 +194,10 @@ _mosaic_window_panes() {
   tmux list-panes -t "$(_mosaic_resolve_window "${1:-}")" -F '#{pane_id}' 2>/dev/null || true
 }
 
+_mosaic_window_last_pane() {
+  _mosaic_window_panes "${1:-}" | tail -n1
+}
+
 _mosaic_window_generation_new() {
   local win="$1"
   printf '%s\n' "${win}:$(date +%s%N):$$:$RANDOM"
@@ -458,28 +462,28 @@ _mosaic_current_pane_path() {
   tmux display-message -p -t "${1:-$(_mosaic_current_pane)}" '#{pane_current_path}'
 }
 
-_mosaic_new_pane_default() {
-  local target_pane current_path pane
-  target_pane=$(_mosaic_current_pane)
-  current_path=$(_mosaic_current_pane_path "$target_pane")
+_mosaic_new_pane_split() {
+  local target_pane="${1:?target pane required}" current_path pane
+  shift
+  current_path=$(_mosaic_current_pane_path)
   if [[ -n "$current_path" ]]; then
-    pane=$(tmux split-window -P -F '#{pane_id}' -t "$target_pane" -c "$current_path")
+    pane=$(tmux split-window "$@" -P -F '#{pane_id}' -t "$target_pane" -c "$current_path")
   else
-    pane=$(tmux split-window -P -F '#{pane_id}' -t "$target_pane")
+    pane=$(tmux split-window "$@" -P -F '#{pane_id}' -t "$target_pane")
   fi
   [[ -n "$pane" ]] || return 1
   printf '%s\n' "$pane"
 }
 
+_mosaic_new_pane_default() { _mosaic_new_pane_split "$(_mosaic_current_pane)"; }
+
 _mosaic_new_pane_append() {
-  local win="$1" pane idx pbase n end
+  local win="$1" pane target_pane last_pane
+  target_pane=$(_mosaic_current_pane)
+  last_pane=$(_mosaic_window_last_pane "$win")
   pane=$(_mosaic_new_pane_default) || return 1
-  idx=$(_mosaic_current_pane_index)
-  pbase=$(_mosaic_current_pane_base)
-  n=$(_mosaic_window_pane_count "$win")
-  end=$((pbase + n - 1))
-  if [[ "$idx" -ne "$end" ]]; then
-    _mosaic_bubble_keep_focus "$idx" "$end"
+  if [[ "$target_pane" != "$last_pane" ]]; then
+    _mosaic_move_keep_focus -s "$pane" -t "$last_pane"
   fi
   printf '%s\n' "$pane"
 }
@@ -540,6 +544,13 @@ _mosaic_swap_keep_focus() {
   local pid
   pid=$(tmux display-message -p '#{pane_id}')
   tmux swap-pane "$@"
+  tmux select-pane -t "$pid"
+}
+
+_mosaic_move_keep_focus() {
+  local pid
+  pid=$(tmux display-message -p '#{pane_id}')
+  tmux move-pane "$@"
   tmux select-pane -t "$pid"
 }
 
