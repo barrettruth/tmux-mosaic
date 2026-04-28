@@ -51,6 +51,15 @@ _mosaic_nmaster_for() { printf '%s\\n' 1; }"
   [ "$output" = "$expected" ]
 }
 
+assert_recursive_signature() {
+  local layout="${1:?layout required}" count="${2:?count required}" expected="${3:?expected signature required}" setup
+  setup="_mosaic_window_pane_count() { printf '%s\\n' $count; }"
+
+  run layout_new_pane_signature "$layout" t:1 "$setup"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$expected" ]
+}
+
 last_pane_id() {
   _mosaic_t list-panes -t "${1:-t:1}" -F '#{pane_id}' | tail -n1
 }
@@ -195,4 +204,78 @@ distinct_pane_lefts() {
   [ "$(last_pane_id t:1)" = "$pane" ]
   [ "$(_mosaic_pane_left "$pane")" -gt 0 ]
   [ "$(_mosaic_pane_top "$pane")" -eq 0 ]
+}
+
+@test "new-pane fast paths: dwindle targets the recursive tail with the master split first" {
+  assert_recursive_signature dwindle 1 "split:%9 -h"
+}
+
+@test "new-pane fast paths: dwindle alternates to a vertical tail split on the third pane" {
+  assert_recursive_signature dwindle 2 "split:%9"
+}
+
+@test "new-pane fast paths: dwindle alternates back to a horizontal tail split on the fourth pane" {
+  assert_recursive_signature dwindle 3 "split:%9 -h"
+}
+
+@test "new-pane fast paths: dwindle 1 -> 2 starts with the new pane on the right before relayout" {
+  local before pane
+  _mosaic_use_layout dwindle
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct dwindle t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" -gt 0 ]
+  [ "$(_mosaic_pane_top "$pane")" -eq 0 ]
+}
+
+@test "new-pane fast paths: spiral targets the first leaf-node birth with the master split" {
+  assert_recursive_signature spiral 1 "split:%9 -h"
+}
+
+@test "new-pane fast paths: spiral targets the second leaf-node birth with a vertical tail split" {
+  assert_recursive_signature spiral 2 "split:%9"
+}
+
+@test "new-pane fast paths: spiral leaves the first node-leaf phase on the append fallback" {
+  assert_recursive_signature spiral 3 "append:t:1"
+}
+
+@test "new-pane fast paths: spiral 1 -> 2 starts with the new pane on the right before relayout" {
+  local before pane
+  _mosaic_use_layout spiral
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct spiral t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" -gt 0 ]
+  [ "$(_mosaic_pane_top "$pane")" -eq 0 ]
+}
+
+@test "new-pane fast paths: spiral 2 -> 3 places the new pane below the tail before relayout" {
+  local before pane old_tail
+  _mosaic_use_layout spiral
+  _mosaic_wait_option_set @mosaic-_fingerprint t:1
+  _mosaic_split t:1
+  old_tail=$(_mosaic_pane_id_at t:1.2)
+  before=$(_mosaic_pane_ids t:1)
+
+  run layout_new_pane_direct spiral t:1
+  [ "$status" -eq 0 ]
+  pane=$(_mosaic_new_pane_id_from "$before" t:1)
+
+  _mosaic_wait_pane_present "$pane" t:1
+  [ "$(last_pane_id t:1)" = "$pane" ]
+  [ "$(_mosaic_pane_left "$pane")" = "$(_mosaic_pane_left "$old_tail")" ]
+  [ "$(_mosaic_pane_top "$pane")" -gt "$(_mosaic_pane_top "$old_tail")" ]
 }
