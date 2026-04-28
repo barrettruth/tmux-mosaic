@@ -75,12 +75,71 @@ _mosaic_clear_layout() {
   _mosaic_t set-option -wqu -t "$target" "@mosaic-layout"
 }
 
+_mosaic_effective_layout() {
+  local target="${1:-t:1}" val
+  val=$(_mosaic_t show-option -wqv -t "$target" "@mosaic-layout" 2>/dev/null)
+  case "$val" in
+  off)
+    printf '\n'
+    return 0
+    ;;
+  '')
+    ;;
+  *)
+    printf '%s\n' "$val"
+    return 0
+    ;;
+  esac
+
+  val=$(_mosaic_t show-option -gwqv "@mosaic-layout" 2>/dev/null)
+  case "$val" in
+  '' | off) printf '\n' ;;
+  *) printf '%s\n' "$val" ;;
+  esac
+}
+
+_mosaic_effective_window_option() {
+  local target="${1:-t:1}" opt="${2:?opt required}" default="${3-}" val
+  val=$(_mosaic_t show-option -wqvA -t "$target" "$opt" 2>/dev/null)
+  printf '%s\n' "${val:-$default}"
+}
+
+_mosaic_expected_fingerprint() {
+  local target="${1:-t:1}" layout n mfact nmaster orientation window_w window_h zoomed
+  layout=$(_mosaic_effective_layout "$target")
+  n=$(_mosaic_t display-message -p -t "$target" '#{window_panes}' 2>/dev/null || printf '0\n')
+  mfact=$(_mosaic_effective_window_option "$target" "@mosaic-mfact" "50")
+  nmaster=$(_mosaic_effective_window_option "$target" "@mosaic-nmaster" "1")
+  orientation=$(_mosaic_effective_window_option "$target" "@mosaic-orientation" "left")
+  window_w=$(_mosaic_t display-message -p -t "$target" '#{window_width}' 2>/dev/null)
+  window_h=$(_mosaic_t display-message -p -t "$target" '#{window_height}' 2>/dev/null)
+  zoomed=$(_mosaic_t display-message -p -t "$target" '#{window_zoomed_flag}' 2>/dev/null)
+  printf '%s|%s|%s|%s|%s|%s|%s|%s\n' \
+    "$layout" "$n" "$mfact" "$nmaster" "$orientation" "$window_w" "$window_h" "$zoomed"
+}
+
+_mosaic_fingerprint_current_p() {
+  local target="${1:-t:1}" actual expected pending
+  actual=$(_mosaic_fingerprint "$target")
+  expected=$(_mosaic_expected_fingerprint "$target")
+  pending=$(_mosaic_window_option_value "$target" "@mosaic-_pending-fingerprint")
+  [[ -n "$actual" && -z "$pending" && "$actual" = "$expected" ]]
+}
+
+_mosaic_wait_fingerprint_current() {
+  local target="${1:-t:1}" timeout="${2:-3000}" layout
+  layout=$(_mosaic_effective_layout "$target")
+  [[ -n "$layout" ]] || return 0
+  _mosaic_wait_until "$timeout" _mosaic_fingerprint_current_p "$target"
+}
+
 _mosaic_split() {
   local target="${1:-t:1}" before fp layout
   _mosaic_quiesce
+  _mosaic_wait_fingerprint_current "$target"
   before=$(_mosaic_t display-message -p -t "$target" '#{window_panes}' 2>/dev/null || echo 0)
   fp=$(_mosaic_fingerprint "$target")
-  layout=$(_mosaic_t show-option -wqvA -t "$target" "@mosaic-layout" 2>/dev/null)
+  layout=$(_mosaic_effective_layout "$target")
   _mosaic_t split-window -t "$target" "sleep 3600"
   _mosaic_wait_pane_count_gt "$before" "$target"
   if [[ -n "$layout" && "$layout" != "off" ]]; then
@@ -89,6 +148,7 @@ _mosaic_split() {
     else
       _mosaic_wait_option_set "@mosaic-_fingerprint" "$target"
     fi
+    _mosaic_wait_fingerprint_current "$target"
   fi
   _mosaic_quiesce
 }
@@ -100,10 +160,11 @@ _mosaic_raw_split() {
 _mosaic_new_pane() {
   local target="${1:-t:1}" before before_count fp layout pane
   _mosaic_quiesce
+  _mosaic_wait_fingerprint_current "$target"
   before=$(_mosaic_pane_ids "$target")
   before_count=$(_mosaic_pane_count "$target")
   fp=$(_mosaic_fingerprint "$target")
-  layout=$(_mosaic_t show-option -wqvA -t "$target" "@mosaic-layout" 2>/dev/null)
+  layout=$(_mosaic_effective_layout "$target")
   _mosaic_exec_direct new-pane >/dev/null
   _mosaic_wait_pane_count_gt "$before_count" "$target"
   if [[ -n "$layout" && "$layout" != "off" ]]; then
@@ -112,6 +173,7 @@ _mosaic_new_pane() {
     else
       _mosaic_wait_option_set "@mosaic-_fingerprint" "$target"
     fi
+    _mosaic_wait_fingerprint_current "$target"
   fi
   pane=$(_mosaic_new_pane_id_from "$before" "$target") || return 1
   _mosaic_wait_pane_present "$pane" "$target"
