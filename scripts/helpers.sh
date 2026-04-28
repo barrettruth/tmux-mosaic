@@ -656,6 +656,34 @@ _mosaic_fibonacci_layout_step() {
   printf -v "$__next" '%s' "$value_next"
 }
 
+_mosaic_fibonacci_append_phase() {
+  local n="$1" step="${2:-0}"
+  local split order next
+  _mosaic_fibonacci_layout_step split order next "$step"
+  if [[ "$n" -gt 1 && "$order" == "leaf-node" ]]; then
+    _mosaic_fibonacci_append_phase "$((n - 1))" "$next"
+    return
+  fi
+  printf '%s %s\n' "$split" "$order"
+}
+
+_mosaic_fibonacci_new_pane() {
+  local win n split order target
+  local -a flags=()
+  win=$(_mosaic_resolve_window "${1:-}")
+  n=$(_mosaic_window_pane_count "$win")
+  read -r split order <<<"$(_mosaic_fibonacci_append_phase "$n")"
+  if [[ "$order" != "leaf-node" ]]; then
+    _mosaic_new_pane_append "$win"
+    return
+  fi
+  target=$(_mosaic_window_last_pane "$win")
+  case "$split" in
+  master | x) flags=(-h) ;;
+  esac
+  _mosaic_new_pane_split "$target" "${flags[@]}"
+}
+
 _mosaic_fibonacci_layout_node() {
   local __out="$1" sx="$2" sy="$3" x="$4" y="$5" n="$6" step="$7" mfact="$8"
   local split order next axis container
