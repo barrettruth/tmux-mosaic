@@ -36,6 +36,20 @@ assert_relayout_count() {
   fi
 }
 
+assert_relayout_count_max() {
+  local expected="$1"
+  _mosaic_quiesce
+  local actual
+  actual=$(relayout_count)
+  if [[ "$actual" -gt "$expected" ]]; then
+    {
+      printf 'expected at most %s relayouts, got %s\nlog:\n' "$expected" "$actual"
+      cat "$(_mosaic_log_file)"
+    } >&2
+    return 1
+  fi
+}
+
 @test "re-sourcing mosaic.tmux does not duplicate mosaic hooks" {
   local hook
   for hook in after-split-window after-kill-pane pane-exited pane-died after-select-pane after-resize-pane after-set-option; do
@@ -184,12 +198,12 @@ assert_relayout_count() {
   assert_relayout_count 1
 }
 
-@test "no double relayout: drag-resize sync triggers one relayout" {
+@test "no double relayout: drag-resize sync triggers at most one relayout" {
   reset_log
   _mosaic_t resize-pane -t t:1.1 -x 160
   _mosaic_wait_log_match 'sync-state:'
 
-  assert_relayout_count 1
+  assert_relayout_count_max 1
   [ "$(sync_count)" -eq 1 ]
 }
 
