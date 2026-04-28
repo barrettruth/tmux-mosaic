@@ -33,6 +33,7 @@ _mosaic_log_file() {
 }
 
 _mosaic_setup_server() {
+  local x="${1:-200}" y="${2:-50}"
   _mosaic_t kill-server 2>/dev/null || true
   mkdir -p "$(_mosaic_test_tmpdir)"
   rm -f "$(_mosaic_log_file)"
@@ -46,7 +47,7 @@ run-shell "$REPO_ROOT/mosaic.tmux"
 set-option -gq @mosaic-debug 1
 set-option -gq @mosaic-log-file "$(_mosaic_log_file)"
 EOF
-  _mosaic_t -f "$conf" new-session -d -s t -x 200 -y 50 "sleep 3600"
+  _mosaic_t -f "$conf" new-session -d -s t -x "$x" -y "$y" "sleep 3600"
   _mosaic_wait_until 3000 \
     bash -c "[ -n \"\$(tmux -L $(_mosaic_socket) show-option -gqv '@mosaic-exec' 2>/dev/null)\" ]"
 }
@@ -93,6 +94,32 @@ _mosaic_split() {
   _mosaic_quiesce
 }
 
+_mosaic_raw_split() {
+  _mosaic_t split-window -P -F '#{pane_id}' "$@" "sleep 3600"
+}
+
+_mosaic_new_pane() {
+  local target="${1:-t:1}" before before_count fp layout pane
+  _mosaic_quiesce
+  before=$(_mosaic_pane_ids "$target")
+  before_count=$(_mosaic_pane_count "$target")
+  fp=$(_mosaic_fingerprint "$target")
+  layout=$(_mosaic_t show-option -wqvA -t "$target" "@mosaic-layout" 2>/dev/null)
+  _mosaic_exec_direct new-pane >/dev/null
+  _mosaic_wait_pane_count_gt "$before_count" "$target"
+  if [[ -n "$layout" && "$layout" != "off" ]]; then
+    if [[ -n "$fp" ]]; then
+      _mosaic_wait_fingerprint_changed_from "$fp" "$target"
+    else
+      _mosaic_wait_option_set "@mosaic-_fingerprint" "$target"
+    fi
+  fi
+  pane=$(_mosaic_new_pane_id_from "$before" "$target") || return 1
+  _mosaic_wait_pane_present "$pane" "$target"
+  _mosaic_quiesce
+  printf '%s\n' "$pane"
+}
+
 _mosaic_socket_path() {
   echo "${TMUX_TMPDIR:-/tmp}/tmux-$(id -u)/$(_mosaic_socket)"
 }
@@ -110,6 +137,31 @@ _mosaic_pane_id_at() {
 
 _mosaic_pane_current_path() {
   _mosaic_t display-message -p -t "${1:?target required}" '#{pane_current_path}'
+}
+
+_mosaic_pane_field() {
+  local target="${1:?target required}" field="${2:?field required}"
+  _mosaic_t display-message -p -t "$target" "#{$field}"
+}
+
+_mosaic_pane_left() {
+  _mosaic_pane_field "${1:?target required}" pane_left
+}
+
+_mosaic_pane_top() {
+  _mosaic_pane_field "${1:?target required}" pane_top
+}
+
+_mosaic_pane_width() {
+  _mosaic_pane_field "${1:?target required}" pane_width
+}
+
+_mosaic_pane_height() {
+  _mosaic_pane_field "${1:?target required}" pane_height
+}
+
+_mosaic_pane_rect() {
+  _mosaic_t display-message -p -t "${1:?target required}" '#{pane_left} #{pane_top} #{pane_width} #{pane_height}'
 }
 
 _mosaic_pane_index() {
@@ -150,6 +202,10 @@ _mosaic_pane_ids() {
   _mosaic_t list-panes -t "${1:-t:1}" -F '#{pane_id}'
 }
 
+_mosaic_last_pane_id() {
+  _mosaic_t list-panes -t "${1:-t:1}" -F '#{pane_id}' | tail -n1
+}
+
 _mosaic_new_pane_id_from() {
   local before="${1-}" target="${2:-t:1}" pane
   while IFS= read -r pane; do
@@ -160,6 +216,20 @@ _mosaic_new_pane_id_from() {
     fi
   done < <(_mosaic_pane_ids "$target")
   return 1
+}
+
+_mosaic_rect_contains() {
+  local outer_left="${1:?outer left required}" outer_top="${2:?outer top required}" outer_width="${3:?outer width required}" outer_height="${4:?outer height required}"
+  local inner_left="${5:?inner left required}" inner_top="${6:?inner top required}" inner_width="${7:?inner width required}" inner_height="${8:?inner height required}"
+  local outer_right inner_right outer_bottom inner_bottom
+  outer_right=$((outer_left + outer_width - 1))
+  inner_right=$((inner_left + inner_width - 1))
+  outer_bottom=$((outer_top + outer_height - 1))
+  inner_bottom=$((inner_top + inner_height - 1))
+  [[ "$inner_left" -ge "$outer_left" &&
+    "$inner_top" -ge "$outer_top" &&
+    "$inner_right" -le "$outer_right" &&
+    "$inner_bottom" -le "$outer_bottom" ]]
 }
 
 _mosaic_layout_outer() {
