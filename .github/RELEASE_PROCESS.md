@@ -95,7 +95,8 @@ Confirm all of the following:
 ## Nightly prereleases
 
 While `main` carries a dev version, the `Nightly Release` workflow can publish a
-moving `nightly` prerelease from the latest successful `quality` run on `main`.
+per-commit nightly prerelease from the latest successful `quality` run on
+`main`, while also refreshing a moving `nightly` alias.
 
 You can trigger it manually with:
 
@@ -106,9 +107,13 @@ gh workflow run release_nightly.yaml --repo barrettruth/tmux-mosaic
 The nightly workflow:
 
 - only publishes when the current version is a dev version
-- deletes and recreates the `nightly` tag if the target commit changed
+- creates an immutable nightly tag and prerelease named
+  `nightly-<version>-<shortsha>` for the target commit
+- refreshes the moving `nightly` tag and prerelease to point at that same
+  commit
 - generates notes against the latest stable tag when one exists
-- creates the `nightly` GitHub Release as a prerelease and marks it non-latest
+- marks nightly prereleases non-latest so stable releases keep the repo's
+  canonical latest slot
 
 ## Release notes
 
