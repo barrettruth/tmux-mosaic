@@ -61,6 +61,23 @@ setup_layout() {
   [ "$(_mosaic_pane_width "$first")" -lt "$first_width" ]
 }
 
+@test "new-pane acceptance: centered-master two-to-three introduces the left stack while keeping the new pane on the right" {
+  local left old_right pane
+  local old_right_left
+
+  setup_layout centered-master 1
+  left=$(_mosaic_pane_id_at t:1.1)
+  old_right=$(_mosaic_pane_id_at t:1.2)
+  old_right_left=$(_mosaic_pane_left "$old_right")
+
+  pane=$(_mosaic_new_pane)
+
+  [ "$(_mosaic_pane_left "$left")" -eq 0 ]
+  [ "$(_mosaic_pane_left "$old_right")" -lt "$old_right_left" ]
+  [ "$(_mosaic_pane_left "$old_right")" -gt "$(_mosaic_pane_left "$left")" ]
+  [ "$(_mosaic_pane_left "$pane")" -gt "$old_right_left" ]
+}
+
 @test "new-pane acceptance: centered-master four-to-five shifts pane roles locally" {
   local master right
   local master_left right_left
@@ -76,6 +93,23 @@ setup_layout() {
   [ "$(_mosaic_pane_left "$master")" -lt "$master_left" ]
   [ "$(_mosaic_pane_left "$right")" -lt "$right_left" ]
   [ "$(_mosaic_pane_left "$right")" -eq "$master_left" ]
+}
+
+@test "new-pane acceptance: three-column three-to-four moves the old right pane into the middle while the new pane stays right" {
+  local middle old_right pane
+  local old_right_left
+
+  setup_layout three-column 2
+  middle=$(_mosaic_pane_id_at t:1.2)
+  old_right=$(_mosaic_pane_id_at t:1.3)
+  old_right_left=$(_mosaic_pane_left "$old_right")
+
+  pane=$(_mosaic_new_pane)
+
+  [ "$(_mosaic_pane_left "$middle")" -gt 0 ]
+  [ "$(_mosaic_pane_left "$old_right")" -lt "$old_right_left" ]
+  [ "$(_mosaic_pane_left "$old_right")" -eq "$(_mosaic_pane_left "$middle")" ]
+  [ "$(_mosaic_pane_left "$pane")" -gt "$(_mosaic_pane_left "$old_right")" ]
 }
 
 @test "new-pane acceptance: grid four-to-five is a global reshape" {

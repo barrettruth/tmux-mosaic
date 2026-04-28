@@ -139,15 +139,18 @@ _layout_relayout() {
 
 _layout_toggle() { _mosaic_toggle_window; }
 _layout_new_pane() {
-  local win n nmaster
+  local win n nmaster target
+  local -a flags=()
   win=$(_mosaic_resolve_window "${1:-}")
   n=$(_mosaic_window_pane_count "$win")
   nmaster=$(_mosaic_nmaster_for "$win")
-  if [[ "$n" -eq 1 && "$nmaster" -eq 1 ]]; then
-    _mosaic_new_pane_split "$(_mosaic_window_last_pane "$win")" -h
-  else
+  if [[ "$nmaster" -ne 1 ]]; then
     _mosaic_new_pane_append "$win"
+    return
   fi
+  target=$(_mosaic_window_last_pane "$win")
+  [[ "$n" -eq 1 ]] && flags=(-h)
+  _mosaic_new_pane_split "$target" "${flags[@]}"
 }
 
 _layout_promote() {

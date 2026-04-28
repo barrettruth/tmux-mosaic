@@ -51,6 +51,16 @@ _mosaic_nmaster_for() { printf '%s\\n' 1; }"
   [ "$output" = "$expected" ]
 }
 
+assert_default_tail_signature() {
+  local layout="${1:?layout required}" count="${2:?count required}" expected="${3:?expected signature required}" setup
+  setup="_mosaic_window_pane_count() { printf '%s\\n' $count; }
+_mosaic_nmaster_for() { printf '%s\\n' 1; }"
+
+  run layout_new_pane_signature "$layout" t:1 "$setup"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$expected" ]
+}
+
 assert_recursive_signature() {
   local layout="${1:?layout required}" count="${2:?count required}" expected="${3:?expected signature required}" setup
   setup="_mosaic_window_pane_count() { printf '%s\\n' $count; }"
@@ -204,6 +214,22 @@ distinct_pane_lefts() {
   [ "$(last_pane_id t:1)" = "$pane" ]
   [ "$(_mosaic_pane_left "$pane")" -gt 0 ]
   [ "$(_mosaic_pane_top "$pane")" -eq 0 ]
+}
+
+@test "new-pane fast paths: centered-master first left-stack transition targets the tail directly" {
+  assert_default_tail_signature centered-master 2 "split:%9"
+}
+
+@test "new-pane fast paths: centered-master later parity transitions still target the right tail directly" {
+  assert_default_tail_signature centered-master 4 "split:%9"
+}
+
+@test "new-pane fast paths: three-column first middle-column transition targets the tail directly" {
+  assert_default_tail_signature three-column 2 "split:%9"
+}
+
+@test "new-pane fast paths: three-column later parity transitions still target the right tail directly" {
+  assert_default_tail_signature three-column 3 "split:%9"
 }
 
 @test "new-pane fast paths: dwindle targets the recursive tail with the master split first" {
