@@ -42,7 +42,7 @@ _layout_layout_split_sizes() {
 _layout_layout_column() {
   local __out="$1" sx="$2" sy="$3" x="$4" y="$5" count="$6"
   local node leaf size ycur
-  local -a sizes
+  local -a sizes=()
 
   if [[ "$count" -eq 1 ]]; then
     _layout_layout_leaf node "$sx" "$sy" "$x" "$y"

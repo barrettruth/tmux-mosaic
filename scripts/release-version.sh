@@ -6,17 +6,17 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FLAKE_FILE="${MOSAIC_FLAKE_FILE:-$ROOT_DIR/flake.nix}"
 
 usage() {
-  echo "usage: $0 <get|set|assert-stable|assert-dev|next-patch-dev|tag|base> [version]" >&2
+  printf '%s\n' "usage: $0 <get|set|assert-stable|assert-dev|next-patch-dev|tag|base> [version]" >&2
 }
 
 read_version() {
   local version
   version="$(awk -F'"' '/version = "/ { print $2; exit }' "$FLAKE_FILE")"
   [[ -n "$version" ]] || {
-    echo "mosaic: could not read version from $FLAKE_FILE" >&2
+    printf '%s\n' "mosaic: could not read version from $FLAKE_FILE" >&2
     return 1
   }
-  echo "$version"
+  printf '%s\n' "$version"
 }
 
 is_stable() {
@@ -29,14 +29,14 @@ is_dev() {
 
 assert_stable() {
   is_stable "$1" || {
-    echo "mosaic: expected stable semver, got $1" >&2
+    printf '%s\n' "mosaic: expected stable semver, got $1" >&2
     return 1
   }
 }
 
 assert_dev() {
   is_dev "$1" || {
-    echo "mosaic: expected dev semver, got $1" >&2
+    printf '%s\n' "mosaic: expected dev semver, got $1" >&2
     return 1
   }
 }
@@ -67,9 +67,9 @@ set_version() {
 base_version() {
   local version="$1"
   if is_dev "$version"; then
-    echo "${version%-dev}"
+    printf '%s\n' "${version%-dev}"
   else
-    echo "$version"
+    printf '%s\n' "$version"
   fi
 }
 
@@ -77,12 +77,12 @@ next_patch_dev() {
   local major minor patch
   assert_stable "$1"
   IFS=. read -r major minor patch <<<"$1"
-  echo "$major.$minor.$((patch + 1))-dev"
+  printf '%s\n' "$major.$minor.$((patch + 1))-dev"
 }
 
 release_tag() {
   assert_stable "$1"
-  echo "v$1"
+  printf '%s\n' "v$1"
 }
 
 cmd="${1:-}"

@@ -220,7 +220,7 @@ setup_master_stack_transition() {
 @test "new-pane acceptance: grid six-to-seven is also a global reshape" {
   local pane
   local new_left new_top new_width new_height
-  local -a rects
+  local -a rects=()
 
   setup_layout grid 5
   while IFS= read -r old; do
