@@ -107,64 +107,18 @@ bind U     set-option -wqu @mosaic-layout
 The section below explains what `managed` changes and how the other apply modes
 behave.
 
-See [Layouts](#layouts) for layout-specific mappings and example bindings.
-
-## Pane Ownership Model
-
-Once a tmux window can contain both panes that should participate in a Mosaic
-layout and panes created or moved in outside it, Mosaic needs a way to tell
-which panes it owns before it can safely relayout, sync sizes, or recover.
-
-`@mosaic-layout` picks a layout for a window. Mosaic separately tracks whether
-the panes in that window belong to the current managed layout. When Mosaic
-first manages a window, it stamps the current panes with a window-specific
-generation. Panes created or moved in outside Mosaic can stay foreign until
-you adopt them.
-
-### `@mosaic-auto-apply`
-
-The main user-facing choice is `@mosaic-auto-apply`, which decides what native
-tmux structural commands should do when they create or expose panes that may
-not belong to the current layout.
-
-| Value     | Raw `split-window` | When to use it |
-| --------- | ------------------ | -------------- |
-| `full`    | Default. Adopt the new pane before structural relayout, so raw tmux splits join Mosaic. | You want native tmux pane commands to behave like part of the active layout. |
-| `managed` | Leave the new pane foreign, mark the window suspended, and skip structural auto-relayout and size sync until you recover. | You want temporary helper panes that Mosaic ignores until you explicitly adopt them. |
-| `none`    | Leave the new pane foreign and skip structural auto-apply. Explicit `new-pane`, `adopt`, and local `@mosaic-layout` changes still work. | You want Mosaic only for explicit actions. |
-
-Under the hood, that ownership tracking still leaves each window in one of
-three states: `managed` when all panes belong to the current generation,
-`suspended` when foreign panes are present and Mosaic has stopped structural
-auto-apply, and unowned when no layout is active for the window.
-
-### Explicit actions and recovery
-
-Those modes mainly affect what happens when you use tmux's built-in structural
-commands. Mosaic's explicit actions are the tools for adding owned panes on
-purpose or recovering a window after foreign panes appear.
-
-| Action     | What it does |
-| ---------- | ------------ |
-| `new-pane` | Creates an owned pane, preserves the current path, appends it to the end of the layout's pane order, and relayouts once. |
-| `adopt`    | Rotates the window generation, claims all current panes, and relayouts once. |
-| `relayout` | Re-applies the current layout to the current window. |
-
-In `managed` mode, a raw `split-window` suspends the window until you close the
-foreign pane, run `adopt`, or set a new local `@mosaic-layout`.
-
-`new-pane`, `promote`, and `resize-master` refuse suspended windows with
-`mosaic: window is suspended; adopt panes first`.
+See [Pane Ownership Model](#Pane Ownership Model) for pane ownership, what
+`managed` changes, and how the other apply modes work.
 
 ## Layouts
 
-The sections below describe the pane arrangements once a window is managed by
-Mosaic. `new-pane` always appends to the end of the layout's pane order; the
-notes below describe what that means visually for each layout. The ownership
+Managed windows can take on a variety of layouts as specified below. The
+`new-pane` command appends to the end of the layout's pane order; see
+below for what that means visually for each layout. Of course, the ownership
 and auto-apply rules above determine whether native tmux pane operations join
 the layout automatically.
 
-The following are provided:
+The following layouts are provided:
 
 <details>
 <summary><code>master-stack</code> — one or more master panes plus equal-split stack</summary>
@@ -589,6 +543,54 @@ bind p select-pane -t :.-
 ```
 
 </details>
+
+
+## Pane Ownership Model
+
+Once a tmux window can contain both panes that should participate in a Mosaic
+layout and panes created or moved in outside it, Mosaic needs a way to tell
+which panes it owns before it can safely relayout, sync sizes, or recover.
+
+`@mosaic-layout` picks a layout for a window. Mosaic separately tracks whether
+the panes in that window belong to the current managed layout. When Mosaic
+first manages a window, it stamps the current panes with a window-specific
+generation. Panes created or moved in outside Mosaic can stay foreign until
+you adopt them.
+
+### `@mosaic-auto-apply`
+
+The main user-facing choice is `@mosaic-auto-apply`, which decides what native
+tmux structural commands should do when they create or expose panes that may
+not belong to the current layout.
+
+| Value     | Raw `split-window` | When to use it |
+| --------- | ------------------ | -------------- |
+| `full`    | Default. Adopt the new pane before structural relayout, so raw tmux splits join Mosaic. | You want native tmux pane commands to behave like part of the active layout. |
+| `managed` | Leave the new pane foreign, mark the window suspended, and skip structural auto-relayout and size sync until you recover. | You want temporary helper panes that Mosaic ignores until you explicitly adopt them. |
+| `none`    | Leave the new pane foreign and skip structural auto-apply. Explicit `new-pane`, `adopt`, and local `@mosaic-layout` changes still work. | You want Mosaic only for explicit actions. |
+
+Under the hood, that ownership tracking still leaves each window in one of
+three states: `managed` when all panes belong to the current generation,
+`suspended` when foreign panes are present and Mosaic has stopped structural
+auto-apply, and unowned when no layout is active for the window.
+
+### Explicit actions and recovery
+
+Those modes mainly affect what happens when you use tmux's built-in structural
+commands. Mosaic's explicit actions are the tools for adding owned panes on
+purpose or recovering a window after foreign panes appear.
+
+| Action     | What it does |
+| ---------- | ------------ |
+| `new-pane` | Creates an owned pane, preserves the current path, appends it to the end of the layout's pane order, and relayouts once. |
+| `adopt`    | Rotates the window generation, claims all current panes, and relayouts once. |
+| `relayout` | Re-applies the current layout to the current window. |
+
+In `managed` mode, a raw `split-window` suspends the window until you close the
+foreign pane, run `adopt`, or set a new local `@mosaic-layout`.
+
+`new-pane`, `promote`, and `resize-master` refuse suspended windows with
+`mosaic: window is suspended; adopt panes first`.
 
 ## Acknowledgements
 
