@@ -6,7 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FLAKE_FILE="${MOSAIC_FLAKE_FILE:-$ROOT_DIR/flake.nix}"
 
 usage() {
-  printf '%s\n' "usage: $0 <get|set|assert-stable|assert-dev|next-patch-dev|tag|base> [version]" >&2
+  printf '%s\n' "usage: $0 <get|set|assert-stable|assert-dev|next-patch-dev|tag|base|nightly-tag> [version] [sha]" >&2
 }
 
 read_version() {
@@ -37,6 +37,13 @@ assert_stable() {
 assert_dev() {
   is_dev "$1" || {
     printf '%s\n' "mosaic: expected dev semver, got $1" >&2
+    return 1
+  }
+}
+
+assert_git_sha() {
+  [[ "$1" =~ ^[0-9a-fA-F]{7,40}$ ]] || {
+    printf '%s\n' "mosaic: expected git sha, got $1" >&2
     return 1
   }
 }
@@ -85,8 +92,17 @@ release_tag() {
   printf '%s\n' "v$1"
 }
 
+nightly_tag() {
+  local version="$1" sha="$2"
+  assert_dev "$version"
+  assert_git_sha "$sha"
+  sha="${sha,,}"
+  printf '%s\n' "nightly-$version-${sha:0:7}"
+}
+
 cmd="${1:-}"
 arg="${2:-}"
+arg2="${3:-}"
 
 case "$cmd" in
 get)
@@ -113,6 +129,16 @@ tag)
   ;;
 base)
   base_version "${arg:-$(read_version)}"
+  ;;
+nightly-tag)
+  if [ -n "$arg2" ]; then
+    nightly_tag "$arg" "$arg2"
+  elif [ -n "$arg" ]; then
+    nightly_tag "$(read_version)" "$arg"
+  else
+    usage
+    exit 1
+  fi
   ;;
 *)
   usage
