@@ -668,14 +668,17 @@ _mosaic_fibonacci_append_phase() {
 }
 
 _mosaic_fibonacci_new_pane() {
-  local win n split order target
+  local variant win n split order target
   local -a flags=()
+  variant=$(_mosaic_fibonacci_variant)
   win=$(_mosaic_resolve_window "${1:-}")
   n=$(_mosaic_window_pane_count "$win")
   read -r split order <<<"$(_mosaic_fibonacci_append_phase "$n")"
   if [[ "$order" != "leaf-node" ]]; then
-    _mosaic_new_pane_append "$win"
-    return
+    if [[ "$variant" != "spiral" || "$order" != "node-leaf" ]]; then
+      _mosaic_new_pane_append "$win"
+      return
+    fi
   fi
   target=$(_mosaic_window_last_pane "$win")
   case "$split" in
