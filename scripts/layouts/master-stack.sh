@@ -85,18 +85,50 @@ _layout_relayout() {
   _mosaic_log "relayout: win=$win n=$n orientation=$orientation nmaster=$nmaster mfact=$mfact"
 }
 
+_layout_new_pane_all_masters() {
+  local win="$1" orientation="$2" n="$3" pbase="$4" target pane
+  local -a flags=()
+  case "$orientation" in
+  left)
+    target=$(_mosaic_window_last_pane "$win")
+    flags=(-h)
+    ;;
+  right)
+    target="$win.$pbase"
+    flags=(-h -b)
+    ;;
+  top)
+    target=$(_mosaic_window_last_pane "$win")
+    ;;
+  bottom)
+    target="$win.$pbase"
+    flags=(-b)
+    ;;
+  esac
+  pane=$(_mosaic_new_pane_split "$target" "${flags[@]}") || return 1
+  case "$orientation" in
+  right | bottom) _mosaic_bubble_keep_focus "$pbase" "$((pbase + n))" ;;
+  esac
+  printf '%s\n' "$pane"
+}
+
 _layout_toggle() { _mosaic_toggle_window; }
 _layout_new_pane() {
-  local win n nmaster orientation target
+  local win n nmaster orientation target pbase
   local -a flags=()
   win=$(_mosaic_resolve_window "${1:-}")
   n=$(_mosaic_window_pane_count "$win")
   nmaster=$(_mosaic_effective_nmaster "$win" "$n")
-  if [[ "$n" -le "$nmaster" ]]; then
+  if [[ "$n" -lt "$nmaster" || "$nmaster" -eq 1 && "$n" -eq "$nmaster" ]]; then
     _mosaic_new_pane_append "$win"
     return
   fi
   orientation=$(_layout_orientation_for "$win")
+  if [[ "$n" -eq "$nmaster" ]]; then
+    pbase=$(_layout_pane_base)
+    _layout_new_pane_all_masters "$win" "$orientation" "$n" "$pbase"
+    return
+  fi
   target=$(_mosaic_window_last_pane "$win")
   case "$orientation" in
   top | bottom) flags=(-h) ;;
