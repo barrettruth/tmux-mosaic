@@ -4,3 +4,4 @@ result*
 *.log
 CLAUDE.md
 .claude/
+.devin/
