@@ -92,11 +92,15 @@ release_tag() {
   printf '%s\n' "v$1"
 }
 
+lowercase_sha() {
+  printf '%s\n' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]'
+}
+
 nightly_tag() {
   local version="$1" sha="$2"
   assert_dev "$version"
   assert_git_sha "$sha"
-  sha="${sha,,}"
+  sha=$(lowercase_sha "$sha")
   printf '%s\n' "nightly-$version-${sha:0:7}"
 }
 

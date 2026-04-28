@@ -1,50 +1,46 @@
 #!/usr/bin/env bash
 
-_layout_pane_count() { tmux display-message -p '#{window_panes}'; }
-_layout_pane_index() { tmux display-message -p '#{pane_index}'; }
-_layout_pane_base() { tmux display-message -p '#{e|+|:0,#{?pane-base-index,#{pane-base-index},0}}'; }
-
 _layout_orientation_for() {
   local win="$1" val
   val=$(_mosaic_get_w "@mosaic-orientation" "left" "$win")
   case "$val" in
   left | right | top | bottom)
-    echo "$val"
+    printf '%s\n' "$val"
     ;;
   *)
     _mosaic_log "orientation: invalid=$val win=$win defaulting=left"
-    echo "left"
+    printf '%s\n' "left"
     ;;
   esac
 }
 
 _layout_layout_for() {
   case "$1" in
-  left) echo "main-vertical" ;;
-  right) echo "main-vertical-mirrored" ;;
-  top) echo "main-horizontal" ;;
-  bottom) echo "main-horizontal-mirrored" ;;
+  left) printf '%s\n' "main-vertical" ;;
+  right) printf '%s\n' "main-vertical-mirrored" ;;
+  top) printf '%s\n' "main-horizontal" ;;
+  bottom) printf '%s\n' "main-horizontal-mirrored" ;;
   esac
 }
 
 _layout_master_pane_option_for() {
   case "$1" in
-  left | right) echo "main-pane-width" ;;
-  top | bottom) echo "main-pane-height" ;;
+  left | right) printf '%s\n' "main-pane-width" ;;
+  top | bottom) printf '%s\n' "main-pane-height" ;;
   esac
 }
 
 _layout_full_layout_for() {
   case "$1" in
-  left | right) echo "even-vertical" ;;
-  top | bottom) echo "even-horizontal" ;;
+  left | right) printf '%s\n' "even-vertical" ;;
+  top | bottom) printf '%s\n' "even-horizontal" ;;
   esac
 }
 
 _layout_join_flag_for() {
   case "$1" in
-  left | right) echo "-v" ;;
-  top | bottom) echo "-h" ;;
+  left | right) printf '%s\n' "-v" ;;
+  top | bottom) printf '%s\n' "-h" ;;
   esac
 }
 
@@ -83,7 +79,7 @@ _layout_relayout() {
   mfact=$(_mosaic_mfact_for "$win")
   orientation=$(_layout_orientation_for "$win")
   nmaster=$(_mosaic_effective_nmaster "$win" "$n")
-  pbase=$(_layout_pane_base)
+  pbase=$(_mosaic_window_pane_base "$win")
 
   _layout_apply_layout "$win" "$orientation" "$mfact"
   if [[ "$nmaster" -ge "$n" ]]; then
@@ -126,7 +122,6 @@ _layout_new_pane_all_masters() {
   printf '%s\n' "$pane"
 }
 
-_layout_toggle() { _mosaic_toggle_window; }
 _layout_new_pane() {
   local win n nmaster orientation target pbase
   local -a flags=()
@@ -144,7 +139,7 @@ _layout_new_pane() {
   fi
   orientation=$(_layout_orientation_for "$win")
   if [[ "$n" -eq "$nmaster" ]]; then
-    pbase=$(_layout_pane_base)
+    pbase=$(_mosaic_window_pane_base "$win")
     _layout_new_pane_all_masters "$win" "$orientation" "$n" "$pbase"
     return
   fi
@@ -157,9 +152,9 @@ _layout_new_pane() {
 
 _layout_promote() {
   local idx n pbase
-  idx=$(_layout_pane_index)
-  n=$(_layout_pane_count)
-  pbase=$(_layout_pane_base)
+  idx=$(_mosaic_current_pane_index)
+  n=$(_mosaic_window_pane_count)
+  pbase=$(_mosaic_window_pane_base)
 
   [[ "$n" -le 1 ]] && return 0
 
@@ -172,17 +167,7 @@ _layout_promote() {
 }
 
 _layout_resize_master() {
-  local delta="${1:-}"
-  if [[ -z "$delta" ]]; then
-    delta=$(_mosaic_get "@mosaic-step" "5")
-  fi
-  local win cur new
-  win=$(_mosaic_current_window)
-  cur=$(_mosaic_mfact_for "$win")
-  new=$((cur + delta))
-  [[ "$new" -lt 5 ]] && new=5
-  [[ "$new" -gt 95 ]] && new=95
-  tmux set-option -wq -t "$win" "@mosaic-mfact" "$new"
+  _mosaic_resize_master_current_window "$@"
 }
 
 _layout_sync_state() {
@@ -198,7 +183,7 @@ _layout_sync_state() {
 
   local pbase pane_size window_size pct orientation
   orientation=$(_layout_orientation_for "$win")
-  pbase=$(_layout_pane_base)
+  pbase=$(_mosaic_window_pane_base "$win")
   case "$orientation" in
   left | right)
     pane_size=$(tmux display-message -p -t "$win.$pbase" '#{pane_width}' 2>/dev/null)
@@ -212,9 +197,7 @@ _layout_sync_state() {
   [[ -z "$pane_size" ]] && return 0
   [[ -z "$window_size" || "$window_size" -le 0 ]] && return 0
 
-  pct=$((pane_size * 100 / window_size))
-  [[ "$pct" -lt 5 ]] && pct=5
-  [[ "$pct" -gt 95 ]] && pct=95
+  pct=$(_mosaic_clamp_percent "$((pane_size * 100 / window_size))")
 
   _mosaic_sync_mfact "$win" "$pct"
   _mosaic_log "sync-state: win=$win orientation=$orientation pane_size=$pane_size window_size=$window_size pct=$pct"

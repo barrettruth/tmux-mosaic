@@ -3,7 +3,6 @@
 _layout_fibonacci_variant() { printf '%s\n' "dwindle"; }
 
 _layout_relayout() { _mosaic_fibonacci_relayout "$@"; }
-_layout_toggle() { _mosaic_toggle_window; }
 _layout_new_pane() { _mosaic_fibonacci_new_pane "$1"; }
 _layout_promote() { _mosaic_fibonacci_promote; }
 _layout_resize_master() { _mosaic_fibonacci_resize_master "$@"; }

@@ -269,22 +269,25 @@ _mosaic_window_has_foreign_panes() {
   return 1
 }
 
+_mosaic_window_guard_layout() {
+  local win="$1"
+  if _mosaic_window_has_layout "$win"; then
+    return 0
+  fi
+  _mosaic_window_ownership_clear "$win"
+  return 1
+}
+
 _mosaic_window_stamp_current_panes() {
   local win generation pane
   win=$(_mosaic_resolve_window "${1:-}")
   generation="${2:?generation required}"
   while IFS= read -r pane; do
     [[ -n "$pane" ]] || continue
-    if ! _mosaic_window_has_layout "$win"; then
-      _mosaic_window_ownership_clear "$win"
-      return 1
-    fi
+    _mosaic_window_guard_layout "$win" || return 1
     _mosaic_pane_owner_generation_set "$pane" "$generation"
   done < <(_mosaic_window_panes "$win")
-  if ! _mosaic_window_has_layout "$win"; then
-    _mosaic_window_ownership_clear "$win"
-    return 1
-  fi
+  _mosaic_window_guard_layout "$win"
 }
 
 _mosaic_window_adopt_current_panes() {
@@ -292,20 +295,11 @@ _mosaic_window_adopt_current_panes() {
   win=$(_mosaic_resolve_window "${1:-}")
   _mosaic_window_has_layout "$win" || return 1
   generation=$(_mosaic_window_generation_ensure "$win")
-  if ! _mosaic_window_has_layout "$win"; then
-    _mosaic_window_ownership_clear "$win"
-    return 1
-  fi
+  _mosaic_window_guard_layout "$win" || return 1
   _mosaic_window_stamp_current_panes "$win" "$generation" || return 1
-  if ! _mosaic_window_has_layout "$win"; then
-    _mosaic_window_ownership_clear "$win"
-    return 1
-  fi
+  _mosaic_window_guard_layout "$win" || return 1
   _mosaic_window_state_set "$win" "managed"
-  if ! _mosaic_window_has_layout "$win"; then
-    _mosaic_window_ownership_clear "$win"
-    return 1
-  fi
+  _mosaic_window_guard_layout "$win"
 }
 
 _mosaic_window_adopt_current_panes_refresh() {
@@ -313,20 +307,11 @@ _mosaic_window_adopt_current_panes_refresh() {
   win=$(_mosaic_resolve_window "${1:-}")
   _mosaic_window_has_layout "$win" || return 1
   generation=$(_mosaic_window_generation_rotate "$win")
-  if ! _mosaic_window_has_layout "$win"; then
-    _mosaic_window_ownership_clear "$win"
-    return 1
-  fi
+  _mosaic_window_guard_layout "$win" || return 1
   _mosaic_window_stamp_current_panes "$win" "$generation" || return 1
-  if ! _mosaic_window_has_layout "$win"; then
-    _mosaic_window_ownership_clear "$win"
-    return 1
-  fi
+  _mosaic_window_guard_layout "$win" || return 1
   _mosaic_window_state_set "$win" "managed"
-  if ! _mosaic_window_has_layout "$win"; then
-    _mosaic_window_ownership_clear "$win"
-    return 1
-  fi
+  _mosaic_window_guard_layout "$win"
 }
 
 _mosaic_window_refresh_state() {
@@ -439,6 +424,13 @@ _mosaic_sync_mfact() {
   current=$(_mosaic_get_w_raw "@mosaic-mfact" "$win")
   [[ "$current" == "$pct" ]] && return 0
   tmux set-option -wq -t "$win" "@mosaic-mfact" "$pct"
+}
+
+_mosaic_clamp_percent() {
+  local pct="$1"
+  [[ "$pct" -lt 5 ]] && pct=5
+  [[ "$pct" -gt 95 ]] && pct=95
+  printf '%s\n' "$pct"
 }
 
 _mosaic_show_message() {
@@ -568,8 +560,21 @@ _mosaic_relayout_simple() {
 
 _mosaic_current_pane_index() { tmux display-message -p '#{pane_index}'; }
 
+_mosaic_window_pane_base() {
+  tmux display-message -p -t "$(_mosaic_resolve_window "${1:-}")" '#{e|+|:0,#{?pane-base-index,#{pane-base-index},0}}'
+}
+
 _mosaic_current_pane_base() {
-  tmux display-message -p '#{e|+|:0,#{?pane-base-index,#{pane-base-index},0}}'
+  _mosaic_window_pane_base
+}
+
+_mosaic_resize_master_current_window() {
+  local delta="${1:-}" win cur new
+  [[ -n "$delta" ]] || delta=$(_mosaic_get "@mosaic-step" "5")
+  win=$(_mosaic_current_window)
+  cur=$(_mosaic_mfact_for "$win")
+  new=$(_mosaic_clamp_percent "$((cur + delta))")
+  tmux set-option -wq -t "$win" "@mosaic-mfact" "$new"
 }
 
 _mosaic_swap_keep_focus() {
@@ -606,7 +611,7 @@ _mosaic_fibonacci_variant() {
   fi
 }
 
-_mosaic_fibonacci_layout_checksum() {
+_mosaic_layout_checksum() {
   local layout="$1" csum=0 i ch
   for ((i = 0; i < ${#layout}; i++)); do
     printf -v ch '%d' "'${layout:i:1}"
@@ -616,12 +621,56 @@ _mosaic_fibonacci_layout_checksum() {
   printf '%04x\n' "$csum"
 }
 
-_mosaic_fibonacci_layout_leaf_id=0
+_mosaic_layout_leaf_id=0
 
-_mosaic_fibonacci_layout_leaf() {
-  local __out="$1" sx="$2" sy="$3" x="$4" y="$5" id="$_mosaic_fibonacci_layout_leaf_id"
-  _mosaic_fibonacci_layout_leaf_id=$((_mosaic_fibonacci_layout_leaf_id + 1))
+_mosaic_layout_leaf_reset() {
+  _mosaic_layout_leaf_id=0
+}
+
+_mosaic_layout_leaf() {
+  local __out="$1" sx="$2" sy="$3" x="$4" y="$5" id="$_mosaic_layout_leaf_id"
+  _mosaic_layout_leaf_id=$((_mosaic_layout_leaf_id + 1))
   printf -v "$__out" '%sx%s,%s,%s,%s' "$sx" "$sy" "$x" "$y" "$id"
+}
+
+_mosaic_layout_split_sizes() {
+  local total="$1" count="$2" usable base rem i size out=()
+  if [[ "$count" -le 1 ]]; then
+    printf '%s\n' "$total"
+    return
+  fi
+  usable=$((total - count + 1))
+  base=$((usable / count))
+  rem=$((usable % count))
+  for ((i = 0; i < count; i++)); do
+    size=$base
+    [[ "$i" -lt "$rem" ]] && size=$((size + 1))
+    out+=("$size")
+  done
+  printf '%s\n' "${out[*]}"
+}
+
+_mosaic_layout_column() {
+  local __out="$1" sx="$2" sy="$3" x="$4" y="$5" count="$6"
+  local node leaf size ycur
+  local -a sizes=()
+
+  if [[ "$count" -eq 1 ]]; then
+    _mosaic_layout_leaf node "$sx" "$sy" "$x" "$y"
+    printf -v "$__out" '%s' "$node"
+    return
+  fi
+
+  read -r -a sizes <<<"$(_mosaic_layout_split_sizes "$sy" "$count")"
+  node="${sx}x${sy},${x},${y}["
+  ycur=$y
+  for size in "${sizes[@]}"; do
+    _mosaic_layout_leaf leaf "$sx" "$size" "$x" "$ycur"
+    node+="$leaf,"
+    ycur=$((ycur + size + 1))
+  done
+  node="${node%,}]"
+  printf -v "$__out" '%s' "$node"
 }
 
 _mosaic_fibonacci_layout_split_master() {
@@ -725,7 +774,7 @@ _mosaic_fibonacci_layout_node() {
   local node_a_var="${__out}_a" node_b_var="${__out}_b" first_size second_size
 
   if [[ "$n" -eq 1 ]]; then
-    _mosaic_fibonacci_layout_leaf "$__out" "$sx" "$sy" "$x" "$y"
+    _mosaic_layout_leaf "$__out" "$sx" "$sy" "$x" "$y"
     return
   fi
 
@@ -750,19 +799,19 @@ _mosaic_fibonacci_layout_node() {
 
   if [[ "$axis" == "x" ]]; then
     if [[ "$order" == "leaf-node" ]]; then
-      _mosaic_fibonacci_layout_leaf "$node_a_var" "$first_size" "$sy" "$x" "$y"
+      _mosaic_layout_leaf "$node_a_var" "$first_size" "$sy" "$x" "$y"
       _mosaic_fibonacci_layout_node "$node_b_var" "$second_size" "$sy" "$((x + first_size + 1))" "$y" "$((n - 1))" "$next" "$mfact"
     else
       _mosaic_fibonacci_layout_node "$node_a_var" "$first_size" "$sy" "$x" "$y" "$((n - 1))" "$next" "$mfact"
-      _mosaic_fibonacci_layout_leaf "$node_b_var" "$second_size" "$sy" "$((x + first_size + 1))" "$y"
+      _mosaic_layout_leaf "$node_b_var" "$second_size" "$sy" "$((x + first_size + 1))" "$y"
     fi
   else
     if [[ "$order" == "leaf-node" ]]; then
-      _mosaic_fibonacci_layout_leaf "$node_a_var" "$sx" "$first_size" "$x" "$y"
+      _mosaic_layout_leaf "$node_a_var" "$sx" "$first_size" "$x" "$y"
       _mosaic_fibonacci_layout_node "$node_b_var" "$sx" "$second_size" "$x" "$((y + first_size + 1))" "$((n - 1))" "$next" "$mfact"
     else
       _mosaic_fibonacci_layout_node "$node_a_var" "$sx" "$first_size" "$x" "$y" "$((n - 1))" "$next" "$mfact"
-      _mosaic_fibonacci_layout_leaf "$node_b_var" "$sx" "$second_size" "$x" "$((y + first_size + 1))"
+      _mosaic_layout_leaf "$node_b_var" "$sx" "$second_size" "$x" "$((y + first_size + 1))"
     fi
   fi
 
@@ -776,7 +825,7 @@ _mosaic_fibonacci_layout_node() {
 _mosaic_fibonacci_layout_body() {
   local __out="$1" sx="$2" sy="$3" n="$4" mfact="$5"
   local layout
-  _mosaic_fibonacci_layout_leaf_id=0
+  _mosaic_layout_leaf_reset
   _mosaic_fibonacci_layout_node layout "$sx" "$sy" 0 0 "$n" 0 "$mfact"
   printf -v "$__out" '%s' "$layout"
 }
@@ -788,7 +837,7 @@ _mosaic_fibonacci_apply_layout() {
   sy=$(tmux display-message -p -t "$win" '#{window_height}' 2>/dev/null)
   [[ -z "$sx" || -z "$sy" ]] && return 0
   _mosaic_fibonacci_layout_body body "$sx" "$sy" "$n" "$mfact"
-  tmux select-layout -t "$win" "$(_mosaic_fibonacci_layout_checksum "$body"),$body" 2>/dev/null || true
+  tmux select-layout -t "$win" "$(_mosaic_layout_checksum "$body"),$body" 2>/dev/null || true
 }
 
 _mosaic_fibonacci_relayout() {
@@ -798,7 +847,7 @@ _mosaic_fibonacci_relayout() {
   n=$(_mosaic_window_pane_count "$win")
   _mosaic_can_relayout_window "$win" "$n" || return 0
   mfact=$(_mosaic_mfact_for "$win")
-  pbase=$(_mosaic_current_pane_base)
+  pbase=$(_mosaic_window_pane_base "$win")
 
   _mosaic_fibonacci_apply_layout "$win" "$n" "$mfact"
 
@@ -823,17 +872,7 @@ _mosaic_fibonacci_promote() {
 }
 
 _mosaic_fibonacci_resize_master() {
-  local delta="${1:-}"
-  if [[ -z "$delta" ]]; then
-    delta=$(_mosaic_get "@mosaic-step" "5")
-  fi
-  local win cur new
-  win=$(_mosaic_current_window)
-  cur=$(_mosaic_mfact_for "$win")
-  new=$((cur + delta))
-  [[ "$new" -lt 5 ]] && new=5
-  [[ "$new" -gt 95 ]] && new=95
-  tmux set-option -wq -t "$win" "@mosaic-mfact" "$new"
+  _mosaic_resize_master_current_window "$@"
 }
 
 _mosaic_fibonacci_sync_state() {
@@ -847,15 +886,13 @@ _mosaic_fibonacci_sync_state() {
   [[ "$n" -le 1 ]] && return 0
 
   local pbase pane_size window_size pct
-  pbase=$(_mosaic_current_pane_base)
+  pbase=$(_mosaic_window_pane_base "$win")
   pane_size=$(tmux display-message -p -t "$win.$pbase" '#{pane_width}' 2>/dev/null)
   window_size=$(tmux display-message -p -t "$win" '#{window_width}' 2>/dev/null)
   [[ -z "$pane_size" ]] && return 0
   [[ -z "$window_size" || "$window_size" -le 0 ]] && return 0
 
-  pct=$((pane_size * 100 / window_size))
-  [[ "$pct" -lt 5 ]] && pct=5
-  [[ "$pct" -gt 95 ]] && pct=95
+  pct=$(_mosaic_clamp_percent "$((pane_size * 100 / window_size))")
 
   _mosaic_sync_mfact "$win" "$pct"
   _mosaic_log "sync-state: win=$win layout=$variant pbase=$pbase pane_size=$pane_size window_size=$window_size pct=$pct"
