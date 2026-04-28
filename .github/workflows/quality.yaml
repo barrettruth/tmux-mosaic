@@ -32,3 +32,10 @@ jobs:
       - uses: cachix/install-nix-action@v31
       - name: Test
         run: nix develop .#ci --command just test
+  bash32:
+    name: Bash 3.2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bash 3.2
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work bash:3.2 bash scripts/bash32-smoke.sh
