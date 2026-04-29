@@ -455,7 +455,7 @@ assert_orientation_layout() {
   _mosaic_reset_log
   _mosaic_t resize-pane -t t:1.1 -x 120
   _mosaic_wait_option_changed_from @mosaic-mfact 50 t:1
-  _mosaic_wait_relayout_count_ge 1
+  _mosaic_wait_fingerprint_current t:1
   mfact=$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)
   [ "$mfact" -ge 59 ]
   [ "$mfact" -le 61 ]
@@ -489,6 +489,7 @@ assert_orientation_layout() {
   _mosaic_split
   _mosaic_t resize-pane -t t:1.1 -y 30
   _mosaic_wait_option_changed_from @mosaic-mfact 50 t:1
+  _mosaic_wait_fingerprint_current t:1
 
   mfact=$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)
   [ "$mfact" -ge 55 ]
