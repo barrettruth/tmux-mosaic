@@ -49,6 +49,9 @@ set-option -gq @mosaic-log-file "$(_mosaic_log_file)"
 EOF
   _mosaic_t -f "$conf" new-session -d -s t -x "$x" -y "$y" "sleep 3600"
   if ! _mosaic_wait_until 3000 _mosaic_global_option_set_p "@mosaic-exec"; then
+    _mosaic_t run-shell "$REPO_ROOT/mosaic.tmux"
+  fi
+  if ! _mosaic_wait_until 3000 _mosaic_global_option_set_p "@mosaic-exec"; then
     {
       printf 'mosaic setup failed\n'
       printf 'conf=%s\n' "$conf"
