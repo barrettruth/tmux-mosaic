@@ -226,7 +226,7 @@ _mosaic_exec_direct() {
   exec=$(_mosaic_t show-option -gqv "@mosaic-exec")
   sock=$(_mosaic_socket_path)
   cmd=$(_mosaic_shell_command "$exec" "$@")
-  TMUX="$sock,$$,0" bash -lc "$cmd"
+  TMUX="$sock,$$,0" bash -c "$cmd"
 }
 
 _mosaic_pane_id_at() {
