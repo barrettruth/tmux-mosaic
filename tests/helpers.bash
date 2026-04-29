@@ -48,7 +48,22 @@ set-option -gq @mosaic-debug 1
 set-option -gq @mosaic-log-file "$(_mosaic_log_file)"
 EOF
   _mosaic_t -f "$conf" new-session -d -s t -x "$x" -y "$y" "sleep 3600"
-  _mosaic_wait_until 3000 _mosaic_global_option_set_p "@mosaic-exec"
+  if ! _mosaic_wait_until 3000 _mosaic_global_option_set_p "@mosaic-exec"; then
+    {
+      printf 'mosaic setup failed\n'
+      printf 'conf=%s\n' "$conf"
+      cat "$conf"
+      printf 'default-shell=%s\n' "$(_mosaic_t show-option -gqv default-shell 2>/dev/null || true)"
+      printf 'default-command=%s\n' "$(_mosaic_t show-option -gqv default-command 2>/dev/null || true)"
+      printf '@mosaic-exec=%s\n' "$(_mosaic_t show-option -gqv @mosaic-exec 2>/dev/null || true)"
+      printf 'socket=%s\n' "$(_mosaic_t display-message -p '#{socket_path}' 2>/dev/null || true)"
+      printf 'pane_current_path=%s\n' "$(_mosaic_t display-message -p -t t:1 '#{pane_current_path}' 2>/dev/null || true)"
+      _mosaic_t show-environment -g 2>/dev/null | grep -E '^(HOME|PATH|PWD|SHELL|TMUX_TMPDIR|XDG_RUNTIME_DIR)=' || true
+      ls -l "$REPO_ROOT/mosaic.tmux" "$REPO_ROOT/scripts/helpers.sh" "$REPO_ROOT/scripts/defaults.sh" 2>&1 || true
+      _mosaic_t show-messages -JT 2>/dev/null || true
+    } >&2
+    return 1
+  fi
 }
 
 _mosaic_teardown_server() {
