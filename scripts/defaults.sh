@@ -11,7 +11,7 @@ _mosaic_set_defaults() {
 
 _mosaic_hook_is_ours() {
   local line="$1"
-  [[ "$line" == *mosaic* ]] || return 1
+  [[ "$line" == *"/scripts/ops.sh "* ]] || return 1
   case "$line" in
   *"scripts/ops.sh relayout #{window_id}"* | \
     *"scripts/ops.sh _sync-state #{window_id}"* | \
