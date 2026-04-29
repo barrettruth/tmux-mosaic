@@ -4,7 +4,7 @@ default:
 format:
     nix fmt -- --ci
     shfmt -i 2 -d mosaic.tmux scripts tests
-    biome format biome.json README.md .github
+    biome format biome.json README.md .forgejo .github
 
 lint:
     shellcheck -x --source-path=SCRIPTDIR --source-path=SCRIPTDIR/scripts mosaic.tmux scripts/*.sh scripts/layouts/*.sh tests/helpers.bash
