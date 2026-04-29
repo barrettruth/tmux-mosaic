@@ -33,7 +33,7 @@ set -g @plugin 'barrettruth/tmux-mosaic'
 1. Clone the repo somewhere tmux can reach it:
 
 ```console
-git clone git@github.com:barrettruth/tmux-mosaic \
+git clone https://git.barrettruth.com/barrettruth/tmux-mosaic.git \
     ${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/tmux-mosaic
 ```
 
@@ -53,7 +53,7 @@ run-shell ${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/tmux-mosaic/mosaic.t
 1. Add the flake input:
 
 ```nix
-inputs.tmux-mosaic.url = "github:barrettruth/tmux-mosaic";
+inputs.tmux-mosaic.url = "git+https://git.barrettruth.com/barrettruth/tmux-mosaic.git";
 ```
 
 2. Source the packaged plugin from your tmux wrapper config:
