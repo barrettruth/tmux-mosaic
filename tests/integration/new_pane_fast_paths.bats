@@ -64,7 +64,7 @@ assert_master_stack_all_masters_trace() {
   setup="_mosaic_window_pane_count() { printf '%s\\n' $count; }
 _mosaic_effective_nmaster() { printf '%s\\n' $count; }
 _layout_orientation_for() { printf '%s\\n' $orientation; }
-_layout_pane_base() { printf '%s\\n' 1; }"
+_mosaic_window_pane_base() { printf '%s\\n' 1; }"
 
   run layout_new_pane_trace master-stack t:1 "$setup"
   [ "$status" -eq 0 ]
