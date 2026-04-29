@@ -57,7 +57,7 @@ assert_relayout_count_max() {
     [ "$(mosaic_hook_count "$hook")" -eq 1 ]
   done
 
-  _mosaic_t run-shell "$REPO_ROOT/mosaic.tmux"
+  _mosaic_source_plugin
 
   for hook in after-split-window after-kill-pane pane-exited pane-died after-select-pane after-resize-pane after-set-option; do
     [ "$(mosaic_hook_count "$hook")" -eq 1 ]
@@ -70,13 +70,13 @@ assert_relayout_count_max() {
   ln -s "$REPO_ROOT/mosaic.tmux" "$alt_root/mosaic.tmux"
   ln -s "$REPO_ROOT/scripts" "$alt_root/scripts"
 
-  _mosaic_t run-shell "$alt_root/mosaic.tmux"
+  _mosaic_source_plugin "$alt_root"
 
   for hook in after-split-window after-kill-pane pane-exited pane-died after-select-pane after-resize-pane after-set-option; do
     [ "$(mosaic_hook_count_for_root "$hook" "$alt_root")" -eq 1 ]
   done
 
-  _mosaic_t run-shell "$alt_root/mosaic.tmux"
+  _mosaic_source_plugin "$alt_root"
 
   for hook in after-split-window after-kill-pane pane-exited pane-died after-select-pane after-resize-pane after-set-option; do
     [ "$(mosaic_hook_count_for_root "$hook" "$alt_root")" -eq 1 ]
@@ -93,7 +93,7 @@ assert_relayout_count_max() {
   _mosaic_t set-hook -ga after-set-option \
     "if-shell -bF '1' \"run-shell -b '$old _on-set-option #{hook_argument_0} #{window_id}'\""
 
-  _mosaic_t run-shell "$REPO_ROOT/mosaic.tmux"
+  _mosaic_source_plugin
 
   run show_hook after-split-window
   [ "$status" -eq 0 ]

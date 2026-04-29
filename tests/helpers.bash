@@ -32,6 +32,24 @@ _mosaic_log_file() {
   printf '%s\n' "$(_mosaic_test_tmpdir)/tmux-mosaic-test.log"
 }
 
+_mosaic_bash_exec() {
+  printf 'bash %q' "${1:?path required}"
+}
+
+_mosaic_shell_command() {
+  local cmd="${1:?command required}" arg
+  shift
+  printf '%s' "$cmd"
+  for arg in "$@"; do
+    printf ' %q' "$arg"
+  done
+}
+
+_mosaic_source_plugin() {
+  local root="${1:-$REPO_ROOT}"
+  _mosaic_t run-shell "$(_mosaic_bash_exec "$root/mosaic.tmux")"
+}
+
 _mosaic_setup_server() {
   local x="${1:-200}" y="${2:-50}"
   _mosaic_t kill-server 2>/dev/null || true
@@ -43,13 +61,13 @@ _mosaic_setup_server() {
 set -g base-index 1
 set -g pane-base-index 1
 set -g default-terminal "screen-256color"
-run-shell "$REPO_ROOT/mosaic.tmux"
+run-shell "$(_mosaic_bash_exec "$REPO_ROOT/mosaic.tmux")"
 set-option -gq @mosaic-debug 1
 set-option -gq @mosaic-log-file "$(_mosaic_log_file)"
 EOF
   _mosaic_t -f "$conf" new-session -d -s t -x "$x" -y "$y" "sleep 3600"
   if ! _mosaic_wait_until 3000 _mosaic_global_option_set_p "@mosaic-exec"; then
-    _mosaic_t run-shell "$REPO_ROOT/mosaic.tmux"
+    _mosaic_source_plugin
   fi
   if ! _mosaic_wait_until 3000 _mosaic_global_option_set_p "@mosaic-exec"; then
     {
@@ -204,10 +222,11 @@ _mosaic_socket_path() {
 }
 
 _mosaic_exec_direct() {
-  local exec sock
+  local exec sock cmd
   exec=$(_mosaic_t show-option -gqv "@mosaic-exec")
   sock=$(_mosaic_socket_path)
-  TMUX="$sock,$$,0" "$exec" "$@"
+  cmd=$(_mosaic_shell_command "$exec" "$@")
+  TMUX="$sock,$$,0" bash -lc "$cmd"
 }
 
 _mosaic_pane_id_at() {
@@ -270,7 +289,7 @@ _mosaic_pane_owner_generation() {
 _mosaic_op() {
   local exec
   exec=$(_mosaic_t show-option -gqv "@mosaic-exec")
-  _mosaic_t run-shell "$exec $*"
+  _mosaic_t run-shell "$(_mosaic_shell_command "$exec" "$@")"
 }
 
 _mosaic_panes_summary() {

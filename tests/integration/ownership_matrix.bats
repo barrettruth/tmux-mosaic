@@ -118,7 +118,7 @@ mosaic_hook_count() {
   _mosaic_wait_window_state managed t:1
   gen=$(_mosaic_window_generation t:1)
 
-  _mosaic_t run-shell "$REPO_ROOT/mosaic.tmux"
+  _mosaic_source_plugin
 
   [ "$(mosaic_hook_count after-split-window)" -eq 1 ]
   [ "$(mosaic_hook_count after-resize-pane)" -eq 1 ]

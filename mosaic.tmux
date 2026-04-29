@@ -7,7 +7,7 @@ source "$CURRENT_DIR/scripts/helpers.sh"
 # shellcheck source=scripts/defaults.sh
 source "$CURRENT_DIR/scripts/defaults.sh"
 
-tmux set-option -gq "@mosaic-exec" "$CURRENT_DIR/scripts/ops.sh"
+tmux set-option -gq "@mosaic-exec" "$(printf 'bash %q' "$CURRENT_DIR/scripts/ops.sh")"
 
 _mosaic_set_defaults
 _mosaic_register_hooks
