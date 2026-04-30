@@ -13,7 +13,7 @@ teardown() {
 helper_eval() {
   local cmd="${1:?command required}" sock
   sock=$(_mosaic_socket_path)
-  TMUX="$sock,$$,0" bash -lc "source '$REPO_ROOT/scripts/helpers.sh'; $cmd"
+  TMUX="$sock,$$,0" bash -c "source '$REPO_ROOT/scripts/helpers.sh'; $cmd"
 }
 
 @test "new-pane helpers: window last pane returns the semantic tail" {

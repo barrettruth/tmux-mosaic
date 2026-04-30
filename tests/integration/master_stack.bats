@@ -74,6 +74,11 @@ assert_orientation_layout() {
   run _mosaic_t show-option -gwqv @mosaic-nmaster
   [ "$status" -eq 0 ]
   [ "$output" = "1" ]
+
+  run _mosaic_t show-option -gqv @mosaic-exec
+  [ "$status" -eq 0 ]
+  [[ "$output" == bash* ]]
+  [[ "$output" == *"scripts/ops.sh"* ]]
 }
 
 @test "plugin load: hooks are registered" {

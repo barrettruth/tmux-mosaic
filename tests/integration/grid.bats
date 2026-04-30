@@ -13,7 +13,7 @@ teardown() {
 
 grid_helper_eval() {
   local cmd="${1:?command required}"
-  REPO_ROOT="$REPO_ROOT" bash -lc "source '$REPO_ROOT/scripts/helpers.sh'; source '$REPO_ROOT/scripts/layouts/grid.sh'; $cmd"
+  REPO_ROOT="$REPO_ROOT" bash -c "source '$REPO_ROOT/scripts/helpers.sh'; source '$REPO_ROOT/scripts/layouts/grid.sh'; $cmd"
 }
 
 @test "grid: 4 panes use tiled layout" {
