@@ -13,6 +13,7 @@ teardown() {
 layout_new_pane_direct() {
   local layout="${1:?layout required}" target="${2:-t:1}" sock
   sock=$(_mosaic_socket_path)
+  _mosaic_disable_layout "$target"
   TMUX="$sock,$$,0" bash -c "source '$REPO_ROOT/scripts/helpers.sh'; source '$REPO_ROOT/scripts/layouts/$layout.sh'; _layout_new_pane '$target'"
 }
 
