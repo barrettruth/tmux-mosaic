@@ -1,0 +1,26 @@
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable version to release
+        required: true
+        type: string
+      next_dev_version:
+        description: Version to put on main after the stable release
+        required: true
+        type: string
+
+jobs:
+  prepare_release:
+    runs-on: nix
+    env:
+      VERSION: ${{ inputs.version }}
+      NEXT_DEV_VERSION: ${{ inputs.next_dev_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepare release PR
+        run: nix develop .#ci --command bash scripts/forgejo-release.sh prepare

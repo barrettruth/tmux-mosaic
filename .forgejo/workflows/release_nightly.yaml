@@ -1,0 +1,28 @@
+name: Nightly Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_quality_check:
+        description: Publish even if main's push quality checks are not green
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: '17 7 * * *'
+
+concurrency:
+  group: nightly-release
+  cancel-in-progress: true
+
+jobs:
+  nightly_release:
+    runs-on: nix
+    env:
+      SKIP_QUALITY_CHECK: ${{ inputs.skip_quality_check }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Publish nightly release
+        run: nix develop .#ci --command bash scripts/forgejo-release.sh nightly

@@ -1,0 +1,31 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      next_dev_version:
+        description: Optional next dev version. Defaults to the next patch dev version.
+        required: false
+        type: string
+      skip_quality_check:
+        description: Publish even if main's push quality checks are not green
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-publish-main
+  cancel-in-progress: false
+
+jobs:
+  publish_release:
+    runs-on: nix
+    env:
+      NEXT_DEV_VERSION: ${{ inputs.next_dev_version }}
+      SKIP_QUALITY_CHECK: ${{ inputs.skip_quality_check }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Publish stable release
+        run: nix develop .#ci --command bash scripts/forgejo-release.sh publish

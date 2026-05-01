@@ -55,6 +55,9 @@
           common = [
             pkgs.biome
             pkgs.bats
+            pkgs.curl
+            pkgs.git
+            pkgs.jq
             pkgs.parallel
             pkgs.shellcheck
             pkgs.shfmt
