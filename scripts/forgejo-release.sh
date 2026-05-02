@@ -177,7 +177,7 @@ create_annotated_tag_if_missing() {
   fi
   if [ -z "$current" ]; then
     git tag -d "$tag" >/dev/null 2>&1 || true
-    git tag -a "$tag" "$target" -m "$tag"
+    git tag -a --no-sign "$tag" "$target" -m "$tag"
     git push origin "refs/tags/$tag"
   fi
 }
@@ -405,7 +405,7 @@ cmd_nightly() {
   delete_release_by_tag nightly
   git push origin :refs/tags/nightly || true
   git tag -d nightly >/dev/null 2>&1 || true
-  git tag -a nightly "$head_sha" -m nightly
+  git tag -a --no-sign nightly "$head_sha" -m nightly
   git push --force origin refs/tags/nightly
   create_or_update_release nightly "$title" "$alias_notes" true "$head_sha"
   rm -f "$notes" "$alias_notes"
