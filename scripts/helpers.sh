@@ -421,9 +421,11 @@ _mosaic_pending_fingerprint_unset() {
 
 _mosaic_sync_mfact() {
   local win="$1" pct="$2" current
+  _MOSAIC_SYNC_STATE_CHANGED=0
   current=$(_mosaic_get_w_raw "@mosaic-mfact" "$win")
   [[ "$current" == "$pct" ]] && return 0
-  tmux set-option -wq -t "$win" "@mosaic-mfact" "$pct"
+  tmux set-option -wq -t "$win" "@mosaic-mfact" "$pct" || return 1
+  _MOSAIC_SYNC_STATE_CHANGED=1
 }
 
 _mosaic_clamp_percent() {

@@ -67,11 +67,12 @@ mosaic_hook_count() {
   _mosaic_use_layout master-stack
   _mosaic_wait_window_generation_set t:1
   _mosaic_wait_window_state managed t:1
+  _mosaic_wait_fingerprint_current t:1
   _mosaic_t set-option -wq -t t:1 "@mosaic-auto-apply" "managed"
 
   pane=$(_mosaic_t split-window -P -F '#{pane_id}' -h -t t:1 "sleep 3600")
   _mosaic_wait_pane_present "$pane" t:1
-  _mosaic_wait_window_state suspended t:1
+  _mosaic_wait_window_state_stable suspended t:1
   [ -z "$(_mosaic_pane_owner_generation "$pane")" ]
 }
 
@@ -80,11 +81,12 @@ mosaic_hook_count() {
   _mosaic_use_layout master-stack
   _mosaic_wait_window_generation_set t:1
   _mosaic_wait_window_state managed t:1
+  _mosaic_wait_fingerprint_current t:1
   _mosaic_t set-option -wq -t t:1 "@mosaic-auto-apply" "managed"
 
   pane=$(_mosaic_t split-window -P -F '#{pane_id}' -v -t t:1 "sleep 3600")
   _mosaic_wait_pane_present "$pane" t:1
-  _mosaic_wait_window_state suspended t:1
+  _mosaic_wait_window_state_stable suspended t:1
   [ -z "$(_mosaic_pane_owner_generation "$pane")" ]
 }
 

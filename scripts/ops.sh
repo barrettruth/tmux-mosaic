@@ -103,6 +103,7 @@ relayout | _on-set-option | _sync-state | new-pane | adopt | promote | resize-ma
 esac
 
 force_relayout=0
+sync_state_changed=0
 if [[ "$cmd" == "_on-set-option" && "$CHANGED_OPT" == "@mosaic-layout" && -n "$local_layout" ]]; then
   ensure_current || exit 0
   if _mosaic_window_has_foreign_panes "$target_window" || ! _mosaic_window_has_owned_panes "$target_window"; then
@@ -162,7 +163,9 @@ relayout | _on-set-option) _layout_relayout "$target_window" ;;
 toggle) _mosaic_toggle_window ;;
 _sync-state)
   if _mosaic_fn_defined _layout_sync_state; then
+    _MOSAIC_SYNC_STATE_CHANGED=0
     _layout_sync_state "$target_window"
+    sync_state_changed="${_MOSAIC_SYNC_STATE_CHANGED:-0}"
   fi
   ;;
 new-pane)
@@ -212,7 +215,14 @@ promote | resize-master)
 esac
 
 case "$cmd" in
-relayout | _on-set-option | _sync-state | promote | new-pane | adopt)
+relayout | _on-set-option | promote | new-pane | adopt)
+  ensure_current || exit 0
+  applied_fingerprint=$(_mosaic_compute_fingerprint "$target_window" "$layout")
+  _mosaic_fingerprint_set "$target_window" "$applied_fingerprint"
+  _mosaic_pending_fingerprint_unset "$target_window"
+  ;;
+_sync-state)
+  [[ "$sync_state_changed" == "1" ]] && exit 0
   ensure_current || exit 0
   applied_fingerprint=$(_mosaic_compute_fingerprint "$target_window" "$layout")
   _mosaic_fingerprint_set "$target_window" "$applied_fingerprint"
