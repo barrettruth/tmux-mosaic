@@ -446,6 +446,7 @@ assert_orientation_layout() {
   _mosaic_t resize-pane -t t:1.1 -x 160
   _mosaic_wait_option @mosaic-mfact 80 t:1
   _mosaic_wait_relayout_count_ge 1
+  _mosaic_wait_fingerprint_current t:1
   [ "$(_mosaic_t show-option -wqv -t t:1 @mosaic-mfact)" = "80" ]
 
   _mosaic_split

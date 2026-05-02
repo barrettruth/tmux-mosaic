@@ -525,6 +525,22 @@ _mosaic_wait_window_state() {
   _mosaic_wait_until "$timeout" _mosaic_window_option_is_p "$target" "@mosaic-_state" "$expected"
 }
 
+_mosaic_wait_window_state_stable() {
+  local expected="${1-}" target="${2:-t:1}" timeout="${3:-3000}" stable_ms="${4:-100}"
+  local elapsed=0 stable_for=0
+  while [[ "$elapsed" -lt "$timeout" ]]; do
+    sleep 0.02
+    elapsed=$((elapsed + 20))
+    if _mosaic_window_option_is_p "$target" "@mosaic-_state" "$expected"; then
+      stable_for=$((stable_for + 20))
+      [[ "$stable_for" -ge "$stable_ms" ]] && return 0
+    else
+      stable_for=0
+    fi
+  done
+  return 1
+}
+
 _mosaic_wait_window_ownership_cleared() {
   local target="${1:-t:1}" timeout="${2:-3000}" stable_ms="${3:-100}"
   local elapsed=0 stable_for=0 ok pane

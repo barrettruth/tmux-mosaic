@@ -16,7 +16,8 @@
 ## Fast inner-loop verification
 
 - Do not use `just ci` or the full `just test` suite as the default inner-loop command for small iterations.
-- For development work, prefer the targeted helper recipes or direct `BATS_FILTER` runs, then save one full `nix develop /home/barrett/dev/tmux-mosaic#ci --command just ci` run for the final pre-PR gate.
+- For Bats timing/flakiness fixes, do not run the full `just test` suite or `just ci` at all. Use targeted `just test-one '<failing-or-flaking-test-name>'` filters, and repeat only those known failing/flaking tests when stress-checking.
+- For non-flake development work, prefer the targeted helper recipes or direct `BATS_FILTER` runs, then save one full `nix develop /home/barrett/dev/tmux-mosaic#ci --command just ci` run for the final pre-PR gate.
 - Run `just format` and `just lint` after the code stabilizes or when touching files those checks actually cover; do not pay that cost after every tiny test-only or docs-only edit.
 - If a full run fails in an area you did not touch, rerun that exact test with `BATS_FILTER` before rerunning the whole suite.
 - Known noisy areas:

@@ -99,13 +99,13 @@ mosaic_hook_count() {
   pane=$(_mosaic_t split-window -P -F '#{pane_id}' -t t:1 'sh -c "exit 0"')
   _mosaic_wait_pane_present "$pane" t:1
   _mosaic_wait_pane_dead "$pane"
-  _mosaic_wait_window_state suspended t:1
+  _mosaic_wait_window_state_stable suspended t:1
 
   [ -z "$(_mosaic_pane_owner_generation "$pane")" ]
 
   _mosaic_t kill-pane -t "$pane"
   _mosaic_wait_pane_count 1 t:1
-  _mosaic_wait_window_state managed t:1
+  _mosaic_wait_window_state_stable managed t:1
 }
 
 @test "re-sourcing mosaic.tmux preserves hook de-dup and ownership state" {
