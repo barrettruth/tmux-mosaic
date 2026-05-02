@@ -1,0 +1,38 @@
+name: Request Review
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, synchronize]
+  workflow_dispatch:
+    inputs:
+      pull_number:
+        description: Pull request number to use for manual smoke testing
+        required: false
+        type: string
+      sender_login:
+        description: Sender login override for manual smoke testing
+        required: false
+        type: string
+      dry_run:
+        description: Print the intended action without requesting review
+        required: false
+        default: false
+        type: boolean
+      force:
+        description: Run even when the sender is barrettruth
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  request_review:
+    runs-on: nix
+    steps:
+      - uses: actions/checkout@v4
+      - name: Request review
+        env:
+          PULL_NUMBER: ${{ inputs.pull_number }}
+          SENDER_LOGIN: ${{ inputs.sender_login }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          FORCE: ${{ inputs.force }}
+        run: nix develop .#ci --command bash .forgejo/scripts/automation.sh request-review

@@ -1,0 +1,41 @@
+name: Release Metadata
+
+on:
+  pull_request_target:
+    types:
+      [
+        opened,
+        reopened,
+        edited,
+        synchronize,
+        labeled,
+        unlabeled,
+        ready_for_review
+      ]
+  workflow_dispatch:
+    inputs:
+      pull_number:
+        description: Pull request number to use for manual smoke testing
+        required: false
+        type: string
+      pull_body:
+        description: Pull request body override for manual smoke testing
+        required: false
+        type: string
+      dry_run:
+        description: Print intended label changes without mutating the PR
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  release_metadata:
+    runs-on: nix
+    env:
+      PULL_NUMBER: ${{ inputs.pull_number }}
+      PULL_BODY: ${{ inputs.pull_body }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply release metadata
+        run: nix develop .#ci --command bash .forgejo/scripts/automation.sh release-metadata

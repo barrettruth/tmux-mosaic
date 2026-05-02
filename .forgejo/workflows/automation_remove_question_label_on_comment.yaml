@@ -1,0 +1,40 @@
+name: Remove Question Label on Issue Comment
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [edited]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number to use for manual smoke testing
+        required: false
+        type: string
+      sender_login:
+        description: Sender login override for manual smoke testing
+        required: false
+        type: string
+      dry_run:
+        description: Print the intended action without changing labels
+        required: false
+        default: false
+        type: boolean
+      force:
+        description: Run even when the sender is barrettruth
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  remove_question:
+    runs-on: nix
+    env:
+      ISSUE_NUMBER: ${{ inputs.issue_number }}
+      SENDER_LOGIN: ${{ inputs.sender_login }}
+      DRY_RUN: ${{ inputs.dry_run }}
+      FORCE: ${{ inputs.force }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove question label
+        run: nix develop .#ci --command bash .forgejo/scripts/automation.sh remove-question-label

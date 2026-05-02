@@ -34,13 +34,18 @@
               !(builtins.elem base [
                 ".direnv"
                 ".envrc"
+                ".forgejo"
                 ".github"
                 ".gitignore"
                 ".editorconfig"
+                "AGENTS.md"
+                "bash32-smoke.sh"
                 "biome.json"
+                "forgejo-release.sh"
                 "flake.nix"
                 "flake.lock"
                 "justfile"
+                "release-version.sh"
                 "result"
                 "tests"
               ])
@@ -59,6 +64,7 @@
             pkgs.git
             pkgs.jq
             pkgs.parallel
+            pkgs.python3
             pkgs.shellcheck
             pkgs.shfmt
             pkgs.tmux
