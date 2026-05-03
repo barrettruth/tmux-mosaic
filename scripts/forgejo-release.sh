@@ -245,18 +245,42 @@ quality_context_status() {
 
 require_quality_success() {
   local sha="$1" skip="${SKIP_QUALITY_CHECK:-}"
-  local context status
+  local context status deadline
+  local -a pending
   if [ "$skip" = "true" ]; then
     printf 'Skipping quality status check for %s\n' "$sha"
     return
   fi
-  for context in \
-    "quality / Format (push)" \
-    "quality / Lint (push)" \
-    "quality / Test (push)"; do
-    status="$(quality_context_status "$sha" "$context")"
-    [ "$status" = "success" ] || die "$context for $sha is '$status', expected success"
+
+  deadline="$(($(date +%s) + 3600))"
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    pending=()
+    for context in \
+      "quality / Format (push)" \
+      "quality / Lint (push)" \
+      "quality / Test (push)"; do
+      status="$(quality_context_status "$sha" "$context")"
+      case "$status" in
+      success)
+        ;;
+      error | failure)
+        die "$context for $sha is '$status', expected success"
+        ;;
+      *)
+        pending+=("$context")
+        ;;
+      esac
+    done
+    if [ "${#pending[@]}" -eq 0 ]; then
+      printf 'Quality checks passed for %s.\n' "$sha"
+      return
+    fi
+
+    printf 'Waiting for quality checks on %s: %s\n' "$sha" "${pending[*]}"
+    sleep 10
   done
+
+  die "timed out waiting for quality checks on $sha"
 }
 
 previous_stable_tag() {
