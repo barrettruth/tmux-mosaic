@@ -1,6 +1,8 @@
-name: Nightly Release
+name: deploy
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       skip_quality_check:
@@ -17,6 +19,7 @@ concurrency:
 
 jobs:
   nightly_release:
+    name: Nightly
     runs-on: nix
     env:
       SKIP_QUALITY_CHECK: ${{ inputs.skip_quality_check }}
