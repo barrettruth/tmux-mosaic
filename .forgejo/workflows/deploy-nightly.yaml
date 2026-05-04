@@ -27,5 +27,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Wait for quality
+        run: nix develop .#ci --command bash scripts/forgejo-release.sh wait-quality
       - name: Publish nightly release
+        env:
+          SKIP_QUALITY_CHECK: true
         run: nix develop .#ci --command bash scripts/forgejo-release.sh nightly

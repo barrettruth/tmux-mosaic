@@ -6,7 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION_SCRIPT="$ROOT_DIR/scripts/release-version.sh"
 
 usage() {
-  printf '%s\n' "usage: $0 <prepare|publish|nightly>" >&2
+  printf '%s\n' "usage: $0 <prepare|publish|nightly|wait-quality>" >&2
 }
 
 die() {
@@ -436,6 +436,15 @@ cmd_nightly() {
   printf 'Published nightly %s and refreshed nightly alias.\n' "$nightly_tag"
 }
 
+cmd_wait_quality() {
+  local head_sha
+  require_api_context
+  fetch_main_and_tags
+  git checkout --detach origin/main
+  head_sha="$(git rev-parse HEAD)"
+  require_quality_success "$head_sha"
+}
+
 cmd="${1:-}"
 case "$cmd" in
 prepare)
@@ -446,6 +455,9 @@ publish)
   ;;
 nightly)
   cmd_nightly
+  ;;
+wait-quality)
+  cmd_wait_quality
   ;;
 *)
   usage
