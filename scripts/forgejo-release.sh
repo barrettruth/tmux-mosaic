@@ -182,6 +182,26 @@ create_annotated_tag_if_missing() {
   fi
 }
 
+delete_remote_tag() {
+  local tag="$1"
+  if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+    git push origin ":refs/tags/$tag"
+  fi
+}
+
+wait_for_remote_tag_absent() {
+  local tag="$1"
+  local attempt=1
+  while [ "$attempt" -le 30 ]; do
+    if ! git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+      return
+    fi
+    sleep 1
+    attempt="$((attempt + 1))"
+  done
+  die "tag $tag still exists after deletion"
+}
+
 release_id_by_tag() {
   local tag="$1" output status
   output="$(mktemp)"
@@ -203,9 +223,8 @@ release_id_by_tag() {
   esac
 }
 
-create_or_update_release() {
-  local tag="$1" title="$2" notes_file="$3" prerelease="$4" target="$5" id payload
-  payload="$(mktemp)"
+release_payload() {
+  local tag="$1" title="$2" notes_file="$3" prerelease="$4" target="$5"
   jq -n \
     --arg tag_name "$tag" \
     --arg target_commitish "$target" \
@@ -219,7 +238,21 @@ create_or_update_release() {
       body: $body,
       draft: false,
       prerelease: $prerelease
-    }' >"$payload"
+    }'
+}
+
+create_release() {
+  local tag="$1" title="$2" notes_file="$3" prerelease="$4" target="$5" payload
+  payload="$(mktemp)"
+  release_payload "$tag" "$title" "$notes_file" "$prerelease" "$target" >"$payload"
+  api_required POST "repos/$repository/releases" "200 201" "$payload" >/dev/null
+  rm -f "$payload"
+}
+
+create_or_update_release() {
+  local tag="$1" title="$2" notes_file="$3" prerelease="$4" target="$5" id payload
+  payload="$(mktemp)"
+  release_payload "$tag" "$title" "$notes_file" "$prerelease" "$target" >"$payload"
   if id="$(release_id_by_tag "$tag")"; then
     api_required PATCH "repos/$repository/releases/$id" "200" "$payload" >/dev/null
   else
@@ -233,6 +266,14 @@ delete_release_by_tag() {
   if id="$(release_id_by_tag "$tag")"; then
     api_required DELETE "repos/$repository/releases/$id" "200 204" >/dev/null
   fi
+}
+
+replace_moving_release() {
+  local tag="$1" title="$2" notes_file="$3" prerelease="$4" target="$5"
+  delete_release_by_tag "$tag"
+  delete_remote_tag "$tag"
+  wait_for_remote_tag_absent "$tag"
+  create_release "$tag" "$title" "$notes_file" "$prerelease" "$target"
 }
 
 quality_context_status() {
@@ -426,12 +467,7 @@ cmd_nightly() {
   create_or_update_release "$nightly_tag" "$title" "$notes" true "$head_sha"
   alias_notes="$(mktemp)"
   write_notes "$alias_notes" "Alias for \`$nightly_tag\`." "$head_sha" "$previous"
-  delete_release_by_tag nightly
-  git push origin :refs/tags/nightly || true
-  git tag -d nightly >/dev/null 2>&1 || true
-  git tag -a --no-sign nightly "$head_sha" -m nightly
-  git push --force origin refs/tags/nightly
-  create_or_update_release nightly "$title" "$alias_notes" true "$head_sha"
+  replace_moving_release nightly "$title" "$alias_notes" true "$head_sha"
   rm -f "$notes" "$alias_notes"
   printf 'Published nightly %s and refreshed nightly alias.\n' "$nightly_tag"
 }
